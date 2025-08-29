@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔧 Casino Detection Debug Console</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'JetBrains Mono', 'Courier New', monospace;
+            background: #0d1117;
+            color: #c9d1d9;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .debug-container {
+            max-width: 1600px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            height: calc(100vh - 40px);
+        }
+        
+        .debug-panel {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 20px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #30363d;
+        }
+        
+        .panel-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #58a6ff;
+        }
+        
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #6e7681;
+        }
+        
+        .status-active { 
+            background: #3fb950;
+            animation: pulse 2s infinite;
+        }
+        
+        .status-error { 
+            background: #f85149;
+            animation: pulse 2s infinite;
+        }
+        
+        .status-warning { 
+            background: #d29922;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+        
+        .console-output {
+            flex: 1;
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            padding: 12px;
+            overflow-y: auto;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+        
+        .console-output::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .console-output::-webkit-scrollbar-track {
+            background: #161b22;
+        }
+        
+        .console-output::-webkit-scrollbar-thumb {
+            background: #30363d;
+            border-radius: 4px;
+        }
+        
+        .log-entry {
+            margin-bottom: 4px;
+            padding: 2px 0;
+            word-wrap: break-word;
+        }
+        
+        .log-timestamp {
+            color: #6e7681;
+            font-size: 11px;
+        }
+        
+        .log-level {
+            font-weight: bold;
+            margin: 0 8px;
+        }
+        
+        .log-info { color: #58a6ff; }
+        .log-success { color: #3fb950; }
+        .log-warning { color: #d29922; }
+        .log-error { color: #f85149; }
+        .log-debug { color: #8b949e; }
+        
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .metric-card {
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            padding: 12px;
+            text-align: center;
+        }
+        
+        .metric-value {
+            font-size: 20px;
+            font-weight: bold;
+            color: #58a6ff;
+            display: block;
+        }
+        
+        .metric-label {
+            font-size: 11px;
+            color: #8b949e;
+            margin-top: 4px;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            background: #21262d;
+            border: 1px solid #30363d;
+            color: #c9d1d9;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .btn:hover {
+            background: #30363d;
+            border-color: #58a6ff;
+        }
+        
+        .btn-primary {
+            background: #238636;
+            border-color: #238636;
+        }
+        
+        .btn-primary:hover {
+            background: #2ea043;
+        }
+        
+        .btn-danger {
+            background: #da3633;
+            border-color: #da3633;
+        }
+        
+        .btn-danger:hover {
+            background: #f85149;
+        }
+        
+        .screenshot-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+        }
+        
+        .screenshot-item {
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            padding: 10px;
+            text-align: center;
+        }
+        
+        .screenshot-item img {
+            max-width: 100%;
+            max-height: 120px;
+            border-radius: 4px;
+            border: 1px solid #30363d;
+        }
+        
+        .screenshot-info {
+            font-size: 11px;
+            color: #8b949e;
+            margin-top: 8px;
+        }
+        
+        .area-visualization {
+            position: relative;
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            padding: 10px;
+            margin-bottom: 15px;
+            min-height: 200px;
+        }
+        
+        .area-box {
+            position: absolute;
+            border: 2px solid;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            font-size: 10px;
+            color: white;
+            padding: 2px 4px;
+        }
+        
+        .area-bet { border-color: #d29922; }
+        .area-win { border-color: #3fb950; }
+        .area-balance { border-color: #58a6ff; }
+        
+        .performance-chart {
+            height: 100px;
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .performance-line {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #3fb950, #58a6ff);
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="debug-container">
+        <!-- Left Panel: Live Monitoring -->
+        <div class="debug-panel">
+            <div class="panel-header">
+                <span class="panel-title">🔍 Live Detection Monitor</span>
+                <div class="status-indicator" id="detectionStatus"></div>
+            </div>
+            
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <span class="metric-value" id="totalSpins">0</span>
+                    <div class="metric-label">Total Spins</div>
+                </div>
+                <div class="metric-card">
+                    <span class="metric-value" id="successRate">0%</span>
+                    <div class="metric-label">Success Rate</div>
+                </div>
+                <div class="metric-card">
+                    <span class="metric-value" id="avgConfidence">0%</span>
+                    <div class="metric-label">Avg OCR Confidence</div>
+                </div>
+                <div class="metric-card">
+                    <span class="metric-value" id="detectionTime">0ms</span>
+                    <div class="metric-label">Avg Detection Time</div>
+                </div>
+            </div>
+            
+            <div class="controls">
+                <button class="btn btn-primary" id="startMonitoringBtn">🚀 Start Monitoring</button>
+                <button class="btn btn-danger" id="stopMonitoringBtn">⏹️ Stop</button>
+                <button class="btn" id="testOCRBtn">🧪 Test OCR</button>
+                <button class="btn" id="clearLogsBtn">🧹 Clear Logs</button>
+                <button class="btn" id="exportDebugBtn">💾 Export Debug</button>
+            </div>
+            
+            <div class="performance-chart" id="performanceChart">
+                <div class="performance-line" id="performanceLine"></div>
+            </div>
+            
+            <div class="console-output" id="liveConsole">
+                <div class="log-entry">
+                    <span class="log-timestamp">Loading...</span>
+                    <span class="log-level log-info">[INIT]</span>
+                    <span>Debug Console initialized</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Right Panel: OCR Analysis -->
+        <div class="debug-panel">
+            <div class="panel-header">
+                <span class="panel-title">🤖 OCR Analysis & Screenshots</span>
+                <div class="status-indicator" id="ocrStatus"></div>
+            </div>
+            
+            <div class="area-visualization" id="areaVisualization">
+                <div style="color: #8b949e; text-align: center; padding-top: 80px;">
+                    📸 Screenshot with OCR areas will appear here
+                </div>
+            </div>
+            
+            <div class="controls">
+                <button class="btn" id="takeDebugScreenshotBtn">📸 Debug Screenshot</button>
+                <button class="btn" id="analyzeCurrentBtn">🔍 Analyze Current</button>
+                <button class="btn" id="calibrateOCRBtn">⚙️ Calibrate OCR</button>
+            </div>
+            
+            <div class="screenshot-grid" id="screenshotGrid">
+                <!-- Screenshots will be populated here -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- Full panel for detailed logs (hidden by default) -->
+    <div class="debug-panel" id="detailedLogsPanel" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 1000; display: none; grid-template-columns: 1fr;">
+        <div class="panel-header">
+            <span class="panel-title">📋 Detailed Debug Logs</span>
+            <button class="btn" id="closeDetailedLogsBtn">✖️ Close</button>
+        </div>
+        <div class="console-output" id="detailedLogs" style="flex: 1;"></div>
+    </div>
+    
+    <script>
+        const { ipcRenderer } = require('electron');
+        
+        class CasinoDebugConsole {
+            constructor() {
+                this.isMonitoring = false;
+                this.metrics = {
+                    totalSpins: 0,
+                    successfulDetections: 0,
+                    ocrConfidenceSum: 0,
+                    detectionTimeSum: 0,
+                    startTime: Date.now()
+                };
+                this.screenshots = [];
+                this.logBuffer = [];
+                
+                this.initializeConsole();
+                this.setupEventListeners();
+                this.startPerformanceMonitoring();
+            }
+            
+            initializeConsole() {
+                this.log('🔧 Casino Debug Console v2.0 gestartet', 'info');
+                this.log('🎯 Bereit für Casino Detection Debugging', 'info');
+                
+                // Initialize status indicators
+                document.getElementById('detectionStatus').className = 'status-indicator';
+                document.getElementById('ocrStatus').className = 'status-indicator';
+                
+                // Load any existing configuration
+                this.loadDebugConfiguration();
+            }
+            
+            setupEventListeners() {
+                // Control buttons
+                document.getElementById('startMonitoringBtn').addEventListener('click', () => this.startMonitoring());
+                document.getElementById('stopMonitoringBtn').addEventListener('click', () => this.stopMonitoring());
+                document.getElementById('testOCRBtn').addEventListener('click', () => this.testOCR());
+                document.getElementById('clearLogsBtn').addEventListener('click', () => this.clearLogs());
+                document.getElementById('exportDebugBtn').addEventListener('click', () => this.exportDebugData());
+                
+                document.getElementById('takeDebugScreenshotBtn').addEventListener('click', () => this.takeDebugScreenshot());
+                document.getElementById('analyzeCurrentBtn').addEventListener('click', () => this.analyzeCurrentScreen());
+                document.getElementById('calibrateOCRBtn').addEventListener('click', () => this.calibrateOCR());
+                
+                document.getElementById('closeDetailedLogsBtn').addEventListener('click', () => this.closeDetailedLogs());
+                
+                // IPC listeners for real-time updates
+                this.setupIPCListeners();
+                
+                // Keyboard shortcuts
+                document.addEventListener('keydown', (e) => {
+                    if (e.ctrlKey && e.key === 'l') {
+                        e.preventDefault();
+                        this.clearLogs();
+                    }
+                    if (e.key === 'F12') {
+                        e.preventDefault();
+                        this.showDetailedLogs();
+                    }
+                });
+            }
+            
+            setupIPCListeners() {
+                // Listen for detection events
+                ipcRenderer.on('debug-spin-detected', (event, data) => {
+                    this.onSpinDetected(data);
+                });
+                
+                ipcRenderer.on('debug-ocr-result', (event, data) => {
+                    this.onOCRResult(data);
+                });
+                
+                ipcRenderer.on('debug-mouse-click', (event, data) => {
+                    this.onMouseClick(data);
+                });
+                
+                ipcRenderer.on('debug-screenshot-taken', (event, data) => {
+                    this.onScreenshotTaken(data);
+                });
+            }
+            
+            async startMonitoring() {
+                if (this.isMonitoring) return;
+                
+                this.isMonitoring = true;
+                document.getElementById('detectionStatus').className = 'status-indicator status-active';
+                
+                this.log('🚀 Live monitoring gestartet', 'success');
+                
+                try {
+                    // Start the detection engine in debug mode
+                    const result = await ipcRenderer.invoke('start-debug-monitoring');
+                    
+                    if (result.success) {
+                        this.log('✅ Debug monitoring aktiv', 'success');
+                        this.startRealTimeUpdates();
+                    } else {
+                        this.log(`❌ Monitoring start failed: ${result.error}`, 'error');
+                        this.stopMonitoring();
+                    }
+                } catch (error) {
+                    this.log(`❌ Monitoring error: ${error.message}`, 'error');
+                    this.stopMonitoring();
+                }
+            }
+            
+            stopMonitoring() {
+                this.isMonitoring = false;
+                document.getElementById('detectionStatus').className = 'status-indicator';
+                
+                this.log('⏹️ Live monitoring gestoppt', 'warning');
+                
+                ipcRenderer.invoke('stop-debug-monitoring');
+            }
+            
+            async testOCR() {
+                this.log('🧪 OCR-System wird getestet...', 'info');
+                document.getElementById('ocrStatus').className = 'status-indicator status-warning';
+                
+                try {
+                    const result = await ipcRenderer.invoke('debug-test-ocr');
+                    
+                    if (result.success) {
+                        this.log('✅ OCR-Test erfolgreich', 'success');
+                        this.log(`📊 Test-Ergebnisse: ${JSON.stringify(result.results, null, 2)}`, 'debug');
+                        document.getElementById('ocrStatus').className = 'status-indicator status-active';
+                    } else {
+                        this.log(`❌ OCR-Test fehlgeschlagen: ${result.error}`, 'error');
+                        document.getElementById('ocrStatus').className = 'status-indicator status-error';
+                    }
+                } catch (error) {
+                    this.log(`❌ OCR-Test error: ${error.message}`, 'error');
+                    document.getElementById('ocrStatus').className = 'status-indicator status-error';
+                }
+            }
+            
+            async takeDebugScreenshot() {
+                this.log('📸 Debug-Screenshot wird erstellt...', 'info');
+                
+                try {
+                    const result = await ipcRenderer.invoke('take-debug-screenshot');
+                    
+                    if (result.success) {
+                        this.log(`✅ Screenshot erstellt: ${result.path}`, 'success');
+                        this.addScreenshot(result.path, 'Manual Debug Screenshot');
+                    } else {
+                        this.log(`❌ Screenshot failed: ${result.error}`, 'error');
+                    }
+                } catch (error) {
+                    this.log(`❌ Screenshot error: ${error.message}`, 'error');
+                }
+            }
+            
+            async analyzeCurrentScreen() {
+                this.log('🔍 Analysiere aktuellen Bildschirm...', 'info');
+                
+                try {
+                    const result = await ipcRenderer.invoke('analyze-current-screen');
+                    
+                    if (result.success) {
+                        this.log('✅ Screen-Analyse abgeschlossen', 'success');
+                        this.displayAreaAnalysis(result.analysis);
+                    } else {
+                        this.log(`❌ Analyse fehlgeschlagen: ${result.error}`, 'error');
+                    }
+                } catch (error) {
+                    this.log(`❌ Analyse error: ${error.message}`, 'error');
+                }
+            }
+            
+            // Event handlers
+            onSpinDetected(data) {
+                this.metrics.totalSpins++;
+                if (data.success) {
+                    this.metrics.successfulDetections++;
+                }
+                
+                this.log(`🎰 SPIN #${this.metrics.totalSpins} detected: Bet=€${data.bet}, Win=€${data.win}`, 'success');
+                this.updateMetrics();
+            }
+            
+            onOCRResult(data) {
+                if (data.confidence) {
+                    this.metrics.ocrConfidenceSum += data.confidence;
+                }
+                
+                this.log(`🤖 OCR: "${data.text}" -> €${data.value} (${data.confidence}% confidence)`, 'info');
+                this.updateMetrics();
+            }
+            
+            onMouseClick(data) {
+                this.log(`🖱️ Click at ${data.x}, ${data.y} (distance from spin button: ${data.distance}px)`, 'debug');
+            }
+            
+            onScreenshotTaken(data) {
+                this.addScreenshot(data.path, data.type || 'Auto Screenshot');
+            }
+            
+            addScreenshot(path, type) {
+                const screenshot = {
+                    path: path,
+                    type: type,
+                    timestamp: Date.now()
+                };
+                
+                this.screenshots.unshift(screenshot);
+                
+                // Keep only last 10 screenshots
+                if (this.screenshots.length > 10) {
+                    this.screenshots = this.screenshots.slice(0, 10);
+                }
+                
+                this.updateScreenshotGrid();
+            }
+            
+            updateScreenshotGrid() {
+                const grid = document.getElementById('screenshotGrid');
+                grid.innerHTML = '';
+                
+                this.screenshots.forEach(screenshot => {
+                    const item = document.createElement('div');
+                    item.className = 'screenshot-item';
+                    
+                    const time = new Date(screenshot.timestamp).toLocaleTimeString('de-DE');
+                    
+                    item.innerHTML = `
+                        <img src="file://${screenshot.path}" alt="Screenshot" loading="lazy">
+                        <div class="screenshot-info">
+                            <div>${screenshot.type}</div>
+                            <div>${time}</div>
+                        </div>
+                    `;
+                    
+                    grid.appendChild(item);
+                });
+            }
+            
+            updateMetrics() {
+                document.getElementById('totalSpins').textContent = this.metrics.totalSpins;
+                
+                const successRate = this.metrics.totalSpins > 0 ? 
+                    (this.metrics.successfulDetections / this.metrics.totalSpins * 100) : 0;
+                document.getElementById('successRate').textContent = successRate.toFixed(1) + '%';
+                
+                const avgConfidence = this.metrics.successfulDetections > 0 ?
+                    (this.metrics.ocrConfidenceSum / this.metrics.successfulDetections) : 0;
+                document.getElementById('avgConfidence').textContent = avgConfidence.toFixed(1) + '%';
+                
+                const avgDetectionTime = this.metrics.totalSpins > 0 ?
+                    (this.metrics.detectionTimeSum / this.metrics.totalSpins) : 0;
+                document.getElementById('detectionTime').textContent = Math.round(avgDetectionTime) + 'ms';
+                
+                // Update performance line
+                const performanceLine = document.getElementById('performanceLine');
+                performanceLine.style.width = Math.min(successRate, 100) + '%';
+            }
+            
+            startRealTimeUpdates() {
+                setInterval(() => {
+                    if (this.isMonitoring) {
+                        // Update live metrics
+                        this.updateMetrics();
+                    }
+                }, 1000);
+            }
+            
+            startPerformanceMonitoring() {
+                setInterval(() => {
+                    // Monitor system performance
+                    const memUsage = performance.memory ? 
+                        Math.round(performance.memory.usedJSHeapSize / 1024 / 1024) : 0;
+                    
+                    if (memUsage > 100) { // > 100MB
+                        this.log(`⚠️ High memory usage: ${memUsage}MB`, 'warning');
+                    }
+                }, 30000); // Check every 30 seconds
+            }
+            
+            log(message, level = 'info') {
+                const timestamp = new Date().toLocaleTimeString('de-DE');
+                const logEntry = {
+                    timestamp,
+                    level,
+                    message,
+                    id: Date.now()
+                };
+                
+                this.logBuffer.push(logEntry);
+                
+                // Keep only last 500 log entries
+                if (this.logBuffer.length > 500) {
+                    this.logBuffer = this.logBuffer.slice(-500);
+                }
+                
+                this.displayLogEntry(logEntry, 'liveConsole');
+                this.displayLogEntry(logEntry, 'detailedLogs');
+            }
+            
+            displayLogEntry(entry, containerId) {
+                const container = document.getElementById(containerId);
+                if (!container) return;
+                
+                const div = document.createElement('div');
+                div.className = 'log-entry';
+                div.innerHTML = `
+                    <span class="log-timestamp">${entry.timestamp}</span>
+                    <span class="log-level log-${entry.level}">[${entry.level.toUpperCase()}]</span>
+                    <span>${entry.message}</span>
+                `;
+                
+                container.appendChild(div);
+                container.scrollTop = container.scrollHeight;
+                
+                // Keep only last 200 visible entries per container
+                const entries = container.children;
+                if (entries.length > 200) {
+                    container.removeChild(entries[0]);
+                }
+            }
+            
+            clearLogs() {
+                document.getElementById('liveConsole').innerHTML = '';
+                document.getElementById('detailedLogs').innerHTML = '';
+                this.logBuffer = [];
+                this.log('🧹 Logs cleared', 'info');
+            }
+            
+            showDetailedLogs() {
+                document.getElementById('detailedLogsPanel').style.display = 'grid';
+            }
+            
+            closeDetailedLogs() {
+                document.getElementById('detailedLogsPanel').style.display = 'none';
+            }
+            
+            async exportDebugData() {
+                const debugData = {
+                    metrics: this.metrics,
+                    logs: this.logBuffer,
+                    screenshots: this.screenshots,
+                    timestamp: new Date().toISOString(),
+                    version: '2.0'
+                };
+                
+                try {
+                    const result = await ipcRenderer.invoke('export-debug-data', debugData);
+                    
+                    if (result.success) {
+                        this.log(`✅ Debug data exported: ${result.path}`, 'success');
+                    } else {
+                        this.log(`❌ Export failed: ${result.error}`, 'error');
+                    }
+                } catch (error) {
+                    this.log(`❌ Export error: ${error.message}`, 'error');
+                }
+            }
+            
+            async loadDebugConfiguration() {
+                try {
+                    const config = await ipcRenderer.invoke('load-debug-config');
+                    if (config) {
+                        this.log('📂 Debug-Konfiguration geladen', 'info');
+                    }
+                } catch (error) {
+                    this.log('⚠️ Keine Debug-Konfiguration gefunden', 'warning');
+                }
+            }
+        }
+        
+        // Initialize debug console
+        window.debugConsole = new CasinoDebugConsole();
+        
+        // Global error handler
+        window.addEventListener('error', (event) => {
+            window.debugConsole.log(`💥 JavaScript Error: ${event.error.message}`, 'error');
+        });
+        
+        // Performance monitoring
+        window.addEventListener('load', () => {
+            const loadTime = performance.timing.loadEventEnd - performance.timing.navigationStart;
+            window.debugConsole.log(`⚡ Debug Console loaded in ${loadTime}ms`, 'info');
+        });
+    </script>
+</body>
+</html>
