@@ -326,6 +326,14 @@ ipcMain.handle('toggle-overlay', () => {
   }
 });
 
+ipcMain.on('overlay-focus-input', (event, isFocused) => {
+  if (overlayWindow && !overlayWindow.isDestroyed()) {
+    overlayWindow.setIgnoreMouseEvents(!isFocused);
+    overlayWindow.setFocusable(isFocused);
+    if (isFocused) overlayWindow.focus();
+  }
+});
+
 // FIX: Add IPC handler for hiding overlay
 ipcMain.handle('hide-overlay', () => {
   if (overlayWindow && !overlayWindow.isDestroyed()) {
