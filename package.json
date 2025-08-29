@@ -1,0 +1,46 @@
+{
+  "name": "casino-tracker-desktop",
+  "version": "1.0.0",
+  "description": "Desktop Casino Session Tracker",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder",
+    "dist": "electron-builder --publish=never"
+  },
+  "build": {
+    "appId": "com.casinotracker.desktop",
+    "productName": "Casino Tracker",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "**/*",
+      "!node_modules/**/*",
+      "!dist/**/*"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "assets/icon.ico"
+    },
+    "mac": {
+      "target": "dmg",
+      "icon": "assets/icon.icns"
+    },
+    "linux": {
+      "target": "AppImage",
+      "icon": "assets/icon.png"
+    }
+  },
+  "devDependencies": {
+    "electron": "^27.3.11",
+    "electron-builder": "^24.13.3"
+  },
+  "dependencies": {
+    "electron-store": "^8.2.0",
+    "node-xlsx": "^0.23.0"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}

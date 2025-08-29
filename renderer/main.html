@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Casino Tracker - Hauptfenster</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+        }
+        
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .header h1 {
+            color: #4c51bf;
+            margin-bottom: 10px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 30px;
+        }
+        
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transition: transform 0.2s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-2px);
+        }
+        
+        .card h3 {
+            color: #4c51bf;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+        
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2d3748;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            color: #718096;
+            font-size: 14px;
+        }
+        
+        .profit-positive {
+            color: #38a169;
+        }
+        
+        .profit-negative {
+            color: #e53e3e;
+        }
+        
+        .sessions-table {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        th, td {
+            text-align: left;
+            padding: 12px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        th {
+            background: #f7fafc;
+            font-weight: 600;
+            color: #4a5568;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+        
+        .btn {
+            background: #4c51bf;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: background 0.2s ease;
+        }
+        
+        .btn:hover {
+            background: #434190;
+        }
+        
+        .btn-secondary {
+            background: #718096;
+        }
+        
+        .btn-secondary:hover {
+            background: #4a5568;
+        }
+        
+        .btn-danger {
+            background: #e53e3e;
+        }
+        
+        .btn-danger:hover {
+            background: #c53030;
+        }
+        
+        .settings-panel {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #4a5568;
+        }
+        
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .status-online { background: #38a169; }
+        .status-offline { background: #e53e3e; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Casino Tracker Desktop</h1>
+        <p>Professionelle Session-Analyse und Tracking</p>
+    </div>
+    
+    <div class="container">
+        <!-- Dashboard Stats -->
+        <div class="dashboard-grid">
+            <div class="card">
+                <h3>Heute</h3>
+                <div class="stat-value" id="todayProfit">€0.00</div>
+                <div class="stat-label">Gewinn/Verlust</div>
+            </div>
+            <div class="card">
+                <h3>Diese Woche</h3>
+                <div class="stat-value" id="weekProfit">€0.00</div>
+                <div class="stat-label">Gewinn/Verlust</div>
+            </div>
+            <div class="card">
+                <h3>Gesamt RTP</h3>
+                <div class="stat-value" id="totalRTP">0%</div>
+                <div class="stat-label">Return to Player</div>
+            </div>
+        </div>
+        
+        <!-- Controls -->
+        <div class="controls">
+            <button class="btn" id="showOverlayBtn">
+                <span class="status-indicator status-offline" id="overlayStatus"></span>
+                Overlay anzeigen
+            </button>
+            <button class="btn btn-secondary" id="exportBtn">Daten exportieren</button>
+            <button class="btn btn-secondary" id="importBtn">Daten importieren</button>
+            <button class="btn btn-danger" id="clearDataBtn">Daten löschen</button>
+        </div>
+        
+        <!-- Recent Sessions -->
+        <div class="sessions-table">
+            <h3 style="margin-bottom: 15px;">Letzte Sessions</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Datum</th>
+                        <th>Spiel</th>
+                        <th>Dauer</th>
+                        <th>Spins</th>
+                        <th>Einsatz</th>
+                        <th>Gewinn</th>
+                        <th>Profit</th>
+                        <th>RTP</th>
+                    </tr>
+                </thead>
+                <tbody id="sessionsTable">
+                    <tr>
+                        <td colspan="8" style="text-align: center; color: #718096;">
+                            Keine Sessions vorhanden
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Settings -->
+        <div class="settings-panel">
+            <h3 style="margin-bottom: 20px;">Einstellungen</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
+                <div>
+                    <div class="form-group">
+                        <label>Overlay-Position</label>
+                        <select id="overlayPosition">
+                            <option value="top-right">Oben Rechts</option>
+                            <option value="top-left">Oben Links</option>
+                            <option value="bottom-right">Unten Rechts</option>
+                            <option value="bottom-left">Unten Links</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Standard-Einsatz</label>
+                        <input type="number" id="defaultBet" step="0.01" value="1.00" min="0.01">
+                    </div>
+                    <div class="form-group checkbox-group">
+                        <input type="checkbox" id="autoSave" checked>
+                        <label for="autoSave">Automatisch speichern</label>
+                    </div>
+                </div>
+                <div>
+                    <div class="form-group">
+                        <label>Hotkey-Modus</label>
+                        <select id="hotkeyMode">
+                            <option value="global">Global (überall aktiv)</option>
+                            <option value="local">Lokal (nur in App)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Big Win Schwellwert</label>
+                        <input type="number" id="bigWinThreshold" step="0.01" value="50.00" min="0">
+                    </div>
+                    <div class="form-group checkbox-group">
+                        <input type="checkbox" id="notifications" checked>
+                        <label for="notifications">Desktop-Benachrichtigungen</label>
+                    </div>
+                </div>
+            </div>
+            <div style="text-align: center; margin-top: 20px;">
+                <button class="btn" id="saveSettingsBtn">Einstellungen speichern</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const { ipcRenderer } = require('electron');
+        
+        class MainWindow {
+            constructor() {
+                this.sessions = [];
+                this.settings = {
+                    overlayPosition: 'top-right',
+                    defaultBet: 1.00,
+                    autoSave: true,
+                    hotkeyMode: 'global',
+                    bigWinThreshold: 50.00,
+                    notifications: true
+                };
+                
+                this.init();
+            }
+            
+            async init() {
+                await this.loadData();
+                this.setupEventListeners();
+                this.updateDashboard();
+                this.updateSessionsTable();
+                this.updateSettings();
+            }
+            
+            setupEventListeners() {
+                document.getElementById('showOverlayBtn').addEventListener('click', () => {
+                    this.toggleOverlay();
+                });
+                
+                document.getElementById('exportBtn').addEventListener('click', () => {
+                    this.exportData();
+                });
+                
+                document.getElementById('importBtn').addEventListener('click', () => {
+                    this.importData();
+                });
+                
+                document.getElementById('clearDataBtn').addEventListener('click', () => {
+                    this.clearData();
+                });
+                
+                document.getElementById('saveSettingsBtn').addEventListener('click', () => {
+                    this.saveSettings();
+                });
+                
+                // Aktualisierung alle 5 Sekunden
+                setInterval(() => {
+                    this.loadData();
+                    this.updateDashboard();
+                }, 5000);
+            }
+            
+            async loadData() {
+                try {
+                    this.sessions = await ipcRenderer.invoke('get-store-data', 'sessions') || [];
+                    this.settings = await ipcRenderer.invoke('get-store-data', 'settings') || this.settings;
+                } catch (error) {
+                    console.error('Fehler beim Laden der Daten:', error);
+                }
+            }
+            
+            updateDashboard() {
+                const today = new Date();
+                const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+                
+                // Heute
+                const todaySessions = this.sessions.filter(s => 
+                    new Date(s.startTime).toDateString() === today.toDateString()
+                );
+                const todayProfit = todaySessions.reduce((sum, s) => sum + s.profit, 0);
+                
+                // Diese Woche
+                const weekSessions = this.sessions.filter(s => 
+                    new Date(s.startTime) >= weekAgo
+                );
+                const weekProfit = weekSessions.reduce((sum, s) => sum + s.profit, 0);
+                
+                // Gesamt RTP
+                const totalBet = this.sessions.reduce((sum, s) => sum + s.totalBet, 0);
+                const totalWin = this.sessions.reduce((sum, s) => sum + s.totalWin, 0);
+                const totalRTP = totalBet > 0 ? (totalWin / totalBet * 100) : 0;
+                
+                // UI Update
+                const todayEl = document.getElementById('todayProfit');
+                todayEl.textContent = `€${todayProfit.toFixed(2)}`;
+                todayEl.className = `stat-value ${todayProfit >= 0 ? 'profit-positive' : 'profit-negative'}`;
+                
+                const weekEl = document.getElementById('weekProfit');
+                weekEl.textContent = `€${weekProfit.toFixed(2)}`;
+                weekEl.className = `stat-value ${weekProfit >= 0 ? 'profit-positive' : 'profit-negative'}`;
+                
+                document.getElementById('totalRTP').textContent = `${totalRTP.toFixed(1)}%`;
+            }
+            
+            updateSessionsTable() {
+                const tbody = document.getElementById('sessionsTable');
+                tbody.innerHTML = '';
+                
+                if (this.sessions.length === 0) {
+                    const row = document.createElement('tr');
+                    row.innerHTML = '<td colspan="8" style="text-align: center; color: #718096;">Keine Sessions vorhanden</td>';
+                    tbody.appendChild(row);
+                    return;
+                }
+                
+                // Zeige die letzten 10 Sessions
+                const recentSessions = this.sessions.slice(-10).reverse();
+                
+                recentSessions.forEach(session => {
+                    const row = document.createElement('tr');
+                    
+                    const date = new Date(session.startTime).toLocaleDateString('de-DE');
+                    const duration = this.formatDuration(session.endTime - session.startTime);
+                    const rtp = session.totalBet > 0 ? (session.totalWin / session.totalBet * 100) : 0;
+                    
+                    row.innerHTML = `
+                        <td>${date}</td>
+                        <td>${session.game || 'Unbekannt'}</td>
+                        <td>${duration}</td>
+                        <td>${session.spins}</td>
+                        <td>€${session.totalBet.toFixed(2)}</td>
+                        <td>€${session.totalWin.toFixed(2)}</td>
+                        <td class="${session.profit >= 0 ? 'profit-positive' : 'profit-negative'}">
+                            €${session.profit.toFixed(2)}
+                        </td>
+                        <td>${rtp.toFixed(1)}%</td>
+                    `;
+                    
+                    tbody.appendChild(row);
+                });
+            }
+            
+            updateSettings() {
+                document.getElementById('overlayPosition').value = this.settings.overlayPosition;
+                document.getElementById('defaultBet').value = this.settings.defaultBet;
+                document.getElementById('autoSave').checked = this.settings.autoSave;
+                document.getElementById('hotkeyMode').value = this.settings.hotkeyMode;
+                document.getElementById('bigWinThreshold').value = this.settings.bigWinThreshold;
+                document.getElementById('notifications').checked = this.settings.notifications;
+            }
+            
+            formatDuration(ms) {
+                const minutes = Math.floor(ms / 60000);
+                const hours = Math.floor(minutes / 60);
+                const remainingMinutes = minutes % 60;
+                
+                if (hours > 0) {
+                    return `${hours}h ${remainingMinutes}m`;
+                }
+                return `${remainingMinutes}m`;
+            }
+            
+            toggleOverlay() {
+                // Diese Funktionalität würde mit dem Main Process kommunizieren
+                // um das Overlay-Fenster zu zeigen/verstecken
+                console.log('Toggle Overlay');
+            }
+            
+            async exportData() {
+                try {
+                    const exportData = {
+                        sessions: this.sessions,
+                        settings: this.settings,
+                        exportTime: new Date().toISOString(),
+                        version: '1.0'
+                    };
+                    
+                    const result = await ipcRenderer.invoke('export-data', exportData);
+                    
+                    if (result.success) {
+                        alert(`Daten erfolgreich exportiert: ${result.path}`);
+                    } else if (!result.canceled) {
+                        alert(`Export-Fehler: ${result.error}`);
+                    }
+                } catch (error) {
+                    alert(`Export-Fehler: ${error.message}`);
+                }
+            }
+            
+            importData() {
+                // Implementierung für Datenimport
+                console.log('Import Data - Funktion noch zu implementieren');
+                alert('Import-Funktion wird in einer zukünftigen Version verfügbar sein.');
+            }
+            
+            async clearData() {
+                const confirm = window.confirm('Sind Sie sicher, dass Sie alle Daten löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.');
+                
+                if (confirm) {
+                    try {
+                        await ipcRenderer.invoke('set-store-data', 'sessions', []);
+                        await ipcRenderer.invoke('set-store-data', 'currentSession', null);
+                        
+                        this.sessions = [];
+                        this.updateDashboard();
+                        this.updateSessionsTable();
+                        
+                        alert('Alle Daten wurden erfolgreich gelöscht.');
+                    } catch (error) {
+                        alert(`Fehler beim Löschen der Daten: ${error.message}`);
+                    }
+                }
+            }
+            
+            async saveSettings() {
+                this.settings = {
+                    overlayPosition: document.getElementById('overlayPosition').value,
+                    defaultBet: parseFloat(document.getElementById('defaultBet').value),
+                    autoSave: document.getElementById('autoSave').checked,
+                    hotkeyMode: document.getElementById('hotkeyMode').value,
+                    bigWinThreshold: parseFloat(document.getElementById('bigWinThreshold').value),
+                    notifications: document.getElementById('notifications').checked
+                };
+                
+                try {
+                    await ipcRenderer.invoke('set-store-data', 'settings', this.settings);
+                    alert('Einstellungen wurden gespeichert.');
+                } catch (error) {
+                    alert(`Fehler beim Speichern der Einstellungen: ${error.message}`);
+                }
+            }
+        }
+        
+        // Initialize main window
+        new MainWindow();
+    </script>
+</body>
+</html>
