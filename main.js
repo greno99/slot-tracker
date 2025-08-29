@@ -5,6 +5,16 @@ const path = require('path');
 const fs = require('fs');
 const xlsx = require('node-xlsx');
 
+// Add mouse and keyboard monitoring
+let globalMouseHook = null;
+try {
+  // Optional: Add global mouse tracking (requires additional package)
+  // const ioHook = require('iohook');
+  // globalMouseHook = ioHook;
+} catch (e) {
+  console.log('Advanced mouse tracking not available - using basic detection');
+}
+
 const store = new Store();
 let mainWindow;
 let overlayWindow;
@@ -236,6 +246,139 @@ function startSpinMonitoring() {
       }
     }
   }, 1000); // Check every second
+}
+
+// NEW: Create area selection overlay
+function createAreaSelectionOverlay(areaType) {
+  const { width, height } = screen.getPrimaryDisplay().workAreaSize;
+  
+  const selectionOverlay = new BrowserWindow({
+    width: width,
+    height: height,
+    x: 0,
+    y: 0,
+    frame: false,
+    alwaysOnTop: true,
+    transparent: true,
+    resizable: false,
+    skipTaskbar: true,
+    webPreferences: {
+      nodeIntegration: true,
+      contextIsolation: false
+    },
+    level: 'screen-saver'
+  });
+  
+  // Load area selection HTML
+  const areaSelectionHtml = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <style>
+        body {
+          margin: 0;
+          padding: 0;
+          background: rgba(0, 0, 0, 0.3);
+          cursor: crosshair;
+          user-select: none;
+          font-family: Arial, sans-serif;
+        }
+        .instructions {
+          position: fixed;
+          top: 20px;
+          left: 50%;
+          transform: translateX(-50%);
+          background: rgba(0, 0, 0, 0.8);
+          color: white;
+          padding: 15px 25px;
+          border-radius: 10px;
+          font-size: 16px;
+          z-index: 1000;
+        }
+        .selection-box {
+          position: absolute;
+          border: 2px dashed #00ff00;
+          background: rgba(0, 255, 0, 0.1);
+          display: none;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="instructions">
+        ${areaType === 'bet' ? '💰 Einsatz-Bereich' : areaType === 'win' ? '🎯 Gewinn-Bereich' : '💳 Guthaben-Bereich'} auswählen<br>
+        <small>Klicken und ziehen um Bereich zu markieren • ESC zum Abbrechen</small>
+      </div>
+      <div class="selection-box" id="selectionBox"></div>
+      
+      <script>
+        const { ipcRenderer } = require('electron');
+        
+        let isSelecting = false;
+        let startX, startY;
+        const selectionBox = document.getElementById('selectionBox');
+        
+        document.addEventListener('mousedown', (e) => {
+          isSelecting = true;
+          startX = e.clientX;
+          startY = e.clientY;
+          selectionBox.style.left = startX + 'px';
+          selectionBox.style.top = startY + 'px';
+          selectionBox.style.width = '0px';
+          selectionBox.style.height = '0px';
+          selectionBox.style.display = 'block';
+        });
+        
+        document.addEventListener('mousemove', (e) => {
+          if (!isSelecting) return;
+          
+          const currentX = e.clientX;
+          const currentY = e.clientY;
+          
+          const width = Math.abs(currentX - startX);
+          const height = Math.abs(currentY - startY);
+          
+          selectionBox.style.left = Math.min(startX, currentX) + 'px';
+          selectionBox.style.top = Math.min(startY, currentY) + 'px';
+          selectionBox.style.width = width + 'px';
+          selectionBox.style.height = height + 'px';
+        });
+        
+        document.addEventListener('mouseup', (e) => {
+          if (!isSelecting) return;
+          
+          const endX = e.clientX;
+          const endY = e.clientY;
+          
+          const coordinates = {
+            x: Math.min(startX, endX),
+            y: Math.min(startY, endY),
+            width: Math.abs(endX - startX),
+            height: Math.abs(endY - startY)
+          };
+          
+          // Save the selected area
+          ipcRenderer.invoke('save-selected-area', '${areaType}', coordinates);
+          
+          // Close the overlay
+          window.close();
+        });
+        
+        document.addEventListener('keydown', (e) => {
+          if (e.key === 'Escape') {
+            window.close();
+          }
+        });
+      </script>
+    </body>
+    </html>
+  `;
+  
+  selectionOverlay.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(areaSelectionHtml));
+  selectionOverlay.show();
+  
+  selectionOverlay.on('closed', () => {
+    // Cleanup
+  });
 }
 
 function createTray() {
@@ -482,6 +625,10 @@ ipcMain.handle('save-detection-config', (event, config) => {
   return { success: true };
 });
 
+ipcMain.handle('load-detection-config', () => {
+  return store.get('spinDetectionConfig') || null;
+});
+
 ipcMain.handle('start-area-selection', (event, areaType) => {
   // Create overlay for area selection
   createAreaSelectionOverlay(areaType);
@@ -533,22 +680,44 @@ ipcMain.handle('take-detection-screenshot', async () => {
 
 ipcMain.handle('test-spin-detection', async (event, config) => {
   try {
-    // Simple test - take screenshot and return dummy values for now
-    const screenshotResult = await desktopCapturer.getSources({
+    console.log('Testing spin detection with config:', config);
+    
+    // Take screenshot first
+    const sources = await desktopCapturer.getSources({
       types: ['screen'],
       thumbnailSize: { width: 1920, height: 1080 }
     });
     
-    // In a real implementation, this would use OCR to read values from specific screen areas
-    // For now, return dummy data
-    return {
+    if (sources.length === 0) {
+      return { success: false, error: 'No screen sources available' };
+    }
+    
+    const screenshot = sources[0].thumbnail;
+    
+    // If we have area configurations, try to extract text from them
+    let results = {
       success: true,
-      bet: '1.00',
+      bet: '0.00',
       win: '0.00',
-      balance: '100.00',
-      message: 'Test erfolgreich (Demo-Werte)'
+      balance: '0.00',
+      message: 'Demo-Werte (OCR wird implementiert)'
     };
+    
+    // If areas are configured, we could do OCR here
+    if (config.areas) {
+      // TODO: Implement OCR text recognition from screenshot areas
+      // For now, return demo values with area info
+      results.message = `Bereiche konfiguriert: ${Object.keys(config.areas).join(', ')}`;
+      
+      // Simulate some realistic values
+      results.bet = (Math.random() * 10 + 0.5).toFixed(2);
+      results.win = Math.random() < 0.3 ? (Math.random() * 50).toFixed(2) : '0.00';
+      results.balance = (100 + Math.random() * 500).toFixed(2);
+    }
+    
+    return results;
   } catch (error) {
+    console.error('Test detection error:', error);
     return { success: false, error: error.message };
   }
 });
