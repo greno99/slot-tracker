@@ -144,7 +144,7 @@ body {
     margin-bottom: 8px;
 }
 
-/* FIX: Better input styling and functionality */
+/* IMPROVED: Better input styling and functionality */
 .input-field {
     background: rgba(255, 255, 255, 0.1);
     border: 1px solid rgba(255, 255, 255, 0.3);
@@ -153,20 +153,21 @@ body {
     padding: 6px 8px;
     font-size: 11px;
     outline: none;
-    transition: border-color 0.2s;
-    /* -webkit-app-region: no-drag; removed to allow input focus */
+    transition: all 0.2s;
+    /* Allow input focus by removing -webkit-app-region: no-drag */
 }
 
 .input-field:focus {
-    border-color: rgba(59, 130, 246, 0.6);
-    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(59, 130, 246, 0.8);
+    background: rgba(255, 255, 255, 0.2);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
 }
 
 .input-field::placeholder {
     color: rgba(255, 255, 255, 0.4);
 }
 
-/* FIX: Hide number input spinners for cleaner look */
+/* Hide number input spinners for cleaner look */
 .input-field::-webkit-outer-spin-button,
 .input-field::-webkit-inner-spin-button {
     -webkit-appearance: none;
@@ -192,6 +193,16 @@ body {
 
 .btn:hover {
     background: rgba(16, 185, 129, 0.5);
+    transform: translateY(-1px);
+}
+
+.btn-secondary {
+    background: rgba(147, 51, 234, 0.3);
+    border-color: rgba(147, 51, 234, 0.5);
+}
+
+.btn-secondary:hover {
+    background: rgba(147, 51, 234, 0.5);
 }
 
 .btn-danger {
@@ -201,6 +212,13 @@ body {
 
 .btn-danger:hover {
     background: rgba(239, 68, 68, 0.5);
+}
+
+/* NEW: Active button state */
+.btn-active {
+    background: rgba(16, 185, 129, 0.6) !important;
+    border-color: rgba(16, 185, 129, 0.8) !important;
+    box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
 }
 
 .session-controls {
@@ -225,6 +243,66 @@ body {
     margin-bottom: 8px;
 }
 
+/* NEW: Current bet display section */
+.current-bet-section {
+    background: rgba(251, 191, 36, 0.15);
+    border: 1px solid rgba(251, 191, 36, 0.4);
+    border-radius: 8px;
+    padding: 10px;
+    margin-bottom: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.current-bet-label {
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.8);
+    font-weight: 500;
+}
+
+.current-bet-amount {
+    font-size: 14px;
+    font-weight: bold;
+    color: #fbbf24;
+    text-shadow: 0 0 4px rgba(251, 191, 36, 0.5);
+}
+
+/* NEW: Auto-detect section */
+.auto-detect-section {
+    background: rgba(59, 130, 246, 0.1);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    border-radius: 6px;
+    padding: 8px;
+    margin: 8px 0;
+}
+
+.auto-detect-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.auto-detect-indicator {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.auto-detect-text {
+    font-size: 9px;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+/* NEW: Input hint styling */
+.input-hint {
+    font-size: 8px;
+    color: rgba(255, 255, 255, 0.5);
+    text-align: center;
+    margin-top: 4px;
+    font-style: italic;
+}
+
 .last-spins {
     max-height: 150px;
     overflow-y: auto;
@@ -240,6 +318,11 @@ body {
     background: rgba(0, 0, 0, 0.2);
     border-radius: 4px;
     font-size: 10px;
+    transition: background 0.2s;
+}
+
+.spin-item:hover {
+    background: rgba(0, 0, 0, 0.3);
 }
 
 .spin-time {
@@ -278,6 +361,8 @@ body {
     opacity: 0;
     transition: all 0.3s ease;
     z-index: 10001;
+    max-width: 300px;
+    text-align: center;
 }
 
 .notification.show {
@@ -286,6 +371,14 @@ body {
 
 .notification.error {
     background: rgba(239, 68, 68, 0.9);
+}
+
+.notification.info {
+    background: rgba(59, 130, 246, 0.9);
+}
+
+.notification.success {
+    background: rgba(16, 185, 129, 0.9);
 }
 
 .minimized {
@@ -309,12 +402,60 @@ body {
     padding: 8px;
     border-radius: 6px;
     text-align: center;
+    transition: background 0.2s;
 }
 
-/* FIX: Mouse wheel indicator */
+.stat-item:hover {
+    background: rgba(0, 0, 0, 0.4);
+}
+
+/* IMPROVED: Mouse wheel indicator */
 .wheel-hint {
     font-size: 8px;
     color: rgba(255, 255, 255, 0.4);
     text-align: center;
-    margin-top: 2px;
+    margin: 2px 0;
+    font-style: italic;
+}
+
+/* NEW: Scrollbar styling for better UX */
+.last-spins::-webkit-scrollbar {
+    width: 4px;
+}
+
+.last-spins::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+}
+
+.last-spins::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 2px;
+}
+
+.last-spins::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.5);
+}
+
+/* IMPROVED: Better focus indicators */
+.input-field:focus {
+    animation: focusPulse 0.3s ease-in-out;
+}
+
+@keyframes focusPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+    100% { transform: scale(1); }
+}
+
+/* NEW: Visual feedback for interactions */
+.btn:active {
+    transform: translateY(1px);
+}
+
+.quick-input:focus-within {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+    padding: 2px;
+    margin: -2px;
 }

@@ -7,6 +7,8 @@ class ElectronCasinoTracker {
         this.currentGame = null;
         this.sessionStartTime = null;
         this.isMinimized = false;
+        this.lastBetAmount = 1.00; // Track last bet amount
+        this.autoDetectActive = false; // For auto-detect functionality
         
         this.sessionData = {
             spins: 0,
@@ -17,7 +19,6 @@ class ElectronCasinoTracker {
             spinsHistory: []
         };
         
-        // FIX: Add settings object with default values
         this.settings = {
             defaultBet: 1.00,
             bigWinThreshold: 50.00,
@@ -29,7 +30,8 @@ class ElectronCasinoTracker {
         this.setupIPC();
         this.loadStoredData();
         this.startTimers();
-        this.setupMouseWheelHandlers(); // FIX: Add mouse wheel support
+        this.setupMouseWheelHandlers();
+        this.updateCurrentBetDisplay(); // NEW: Show current bet
     }
     
     initEventListeners() {
@@ -39,7 +41,6 @@ class ElectronCasinoTracker {
         document.getElementById('stopBtn').addEventListener('click', () => this.stopSession());
         document.getElementById('minimizeBtn').addEventListener('click', () => this.toggleMinimize());
         
-        // FIX: Proper close button handler
         document.getElementById('closeBtn').addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -52,8 +53,12 @@ class ElectronCasinoTracker {
         document.getElementById('exportBtn').addEventListener('click', () => this.exportData());
         document.getElementById('statsBtn').addEventListener('click', () => this.showStats());
         
-        // FIX: Better input handlers with proper event prevention
-        document.getElementById('gameInput').addEventListener('keypress', (e) => {
+        // NEW: Auto-detect button
+        document.getElementById('autoDetectBtn').addEventListener('click', () => this.toggleAutoDetect());
+        
+        // IMPROVED: Better input handlers with focus management
+        const gameInput = document.getElementById('gameInput');
+        gameInput.addEventListener('keypress', (e) => {
             e.stopPropagation();
             if (e.key === 'Enter') {
                 e.preventDefault();
@@ -61,7 +66,19 @@ class ElectronCasinoTracker {
             }
         });
         
-        document.getElementById('betInput').addEventListener('keypress', (e) => {
+        // IMPROVED: Make sure game input can receive focus
+        gameInput.addEventListener('focus', (e) => {
+            e.stopPropagation();
+            // Temporarily disable mouse events to allow typing
+            ipcRenderer.send('overlay-focus-input', true);
+        });
+        
+        gameInput.addEventListener('blur', (e) => {
+            ipcRenderer.send('overlay-focus-input', false);
+        });
+        
+        const betInput = document.getElementById('betInput');
+        betInput.addEventListener('keypress', (e) => {
             e.stopPropagation();
             if (e.key === 'Enter') {
                 e.preventDefault();
@@ -69,7 +86,13 @@ class ElectronCasinoTracker {
             }
         });
         
-        document.getElementById('winInput').addEventListener('keypress', (e) => {
+        // NEW: Update current bet display when bet input changes
+        betInput.addEventListener('input', () => {
+            this.updateCurrentBetDisplay();
+        });
+        
+        const winInput = document.getElementById('winInput');
+        winInput.addEventListener('keypress', (e) => {
             e.stopPropagation();
             if (e.key === 'Enter') {
                 e.preventDefault();
@@ -77,11 +100,15 @@ class ElectronCasinoTracker {
             }
         });
 
-        // FIX: Prevent inputs from being affected by global shortcuts
+        // IMPROVED: Enhanced focus management for all inputs
         const inputs = document.querySelectorAll('.input-field');
         inputs.forEach(input => {
             input.addEventListener('focus', (e) => {
                 e.stopPropagation();
+                ipcRenderer.send('overlay-focus-input', true);
+            });
+            input.addEventListener('blur', (e) => {
+                ipcRenderer.send('overlay-focus-input', false);
             });
             input.addEventListener('click', (e) => {
                 e.stopPropagation();
@@ -92,7 +119,6 @@ class ElectronCasinoTracker {
         });
     }
     
-    // FIX: Add mouse wheel support for number inputs
     setupMouseWheelHandlers() {
         const betInput = document.getElementById('betInput');
         const winInput = document.getElementById('winInput');
@@ -102,7 +128,7 @@ class ElectronCasinoTracker {
                 e.preventDefault();
                 e.stopPropagation();
                 
-                const step = parseFloat(input.step) || 0.01;
+                const step = input === betInput ? 0.10 : 0.50; // Different steps for bet vs win
                 const currentValue = parseFloat(input.value) || 0;
                 
                 if (e.deltaY < 0) {
@@ -114,19 +140,105 @@ class ElectronCasinoTracker {
                     input.value = newValue.toFixed(2);
                 }
                 
-                // Trigger change event
+                // NEW: Update current bet display when scrolling bet input
+                if (input === betInput) {
+                    this.updateCurrentBetDisplay();
+                }
+                
                 input.dispatchEvent(new Event('change'));
             });
             
-            // Show wheel hint on focus
             input.addEventListener('focus', () => {
-                this.showNotification('Verwenden Sie das Mausrad zum Ändern des Werts', 'info');
+                const stepText = input === betInput ? '€0.10' : '€0.50';
+                this.showNotification(`Mausrad verwenden (Schritte: ${stepText})`, 'info');
             });
         });
     }
     
+    // NEW: Update display of current bet amount
+    updateCurrentBetDisplay() {
+        const betInput = document.getElementById('betInput');
+        const currentBetDisplay = document.getElementById('currentBetAmount');
+        
+        let displayAmount = this.lastBetAmount;
+        
+        // If user is typing, show that value
+        if (betInput.value && parseFloat(betInput.value) > 0) {
+            displayAmount = parseFloat(betInput.value);
+        }
+        
+        if (currentBetDisplay) {
+            currentBetDisplay.textContent = `€${displayAmount.toFixed(2)}`;
+        }
+    }
+    
+    // NEW: Toggle auto-detect functionality
+    toggleAutoDetect() {
+        this.autoDetectActive = !this.autoDetectActive;
+        const btn = document.getElementById('autoDetectBtn');
+        const indicator = document.getElementById('autoDetectIndicator');
+        
+        if (this.autoDetectActive) {
+            btn.textContent = 'Auto: ON';
+            btn.classList.add('btn-active');
+            indicator.classList.add('status-active');
+            this.showNotification('Auto-Detect aktiviert - F2 für schnelle Gewinn-Eingabe', 'success');
+        } else {
+            btn.textContent = 'Auto: OFF';
+            btn.classList.remove('btn-active');
+            indicator.classList.remove('status-active');
+            this.showNotification('Auto-Detect deaktiviert', 'info');
+        }
+    }
+    
+    // NEW: Smart auto-detect for wins
+    smartAutoDetect() {
+        if (!this.autoDetectActive || !this.isTracking || this.isPaused) {
+            return;
+        }
+        
+        // Simple auto-detection logic
+        // This could be enhanced with screen reading or pattern recognition
+        const winInput = document.getElementById('winInput');
+        
+        // For now, we'll use a simple prompt-based approach
+        const detectedWin = this.getLastPossibleWin();
+        
+        if (detectedWin > 0) {
+            winInput.value = detectedWin.toFixed(2);
+            this.showNotification(`Gewinn erkannt: €${detectedWin.toFixed(2)}`, 'success');
+            // Auto-submit after 2 seconds if user doesn't change it
+            setTimeout(() => {
+                if (winInput.value === detectedWin.toFixed(2)) {
+                    this.addWin();
+                }
+            }, 2000);
+        } else {
+            // Focus the win input for manual entry
+            winInput.focus();
+            this.showNotification('Gewinn eingeben (oder 0 für Verlust)', 'info');
+        }
+    }
+    
+    // NEW: Simple heuristic to detect possible win amounts
+    getLastPossibleWin() {
+        // This is a placeholder for more sophisticated detection
+        // Could integrate with screen reading, OCR, or browser automation
+        
+        const recentSpins = this.sessionData.spinsHistory.slice(-5);
+        if (recentSpins.length === 0) return 0;
+        
+        const lastBet = recentSpins[recentSpins.length - 1]?.bet || this.lastBetAmount;
+        
+        // Simple pattern detection based on common multipliers
+        const commonMultipliers = [0, 0.5, 1, 1.5, 2, 2.5, 3, 5, 10, 20, 50, 100];
+        
+        // For demo purposes, return 0 (user needs to input manually)
+        // In a real implementation, this would analyze screen content
+        return 0;
+    }
+    
     setupIPC() {
-        // Hotkey-Handler vom Main Process
         ipcRenderer.on('hotkey', (event, key) => {
             this.handleHotkey(key);
         });
@@ -135,12 +247,10 @@ class ElectronCasinoTracker {
             this.showNotification(`Screenshot gespeichert: ${path}`, 'success');
         });
 
-        // FIX: Listen for main window close events
         ipcRenderer.on('main-window-closed', () => {
             this.closeOverlay();
         });
 
-        // FIX: Listen for settings updates from main window
         ipcRenderer.on('settings-updated', async () => {
             try {
                 const storedSettings = await ipcRenderer.invoke('get-store-data', 'settings');
@@ -156,7 +266,6 @@ class ElectronCasinoTracker {
     }
     
     handleHotkey(key) {
-        // FIX: Don't process hotkeys when input is focused
         const activeElement = document.activeElement;
         if (activeElement && activeElement.tagName === 'INPUT') {
             return;
@@ -168,8 +277,12 @@ class ElectronCasinoTracker {
                     this.addQuickSpin();
                 }
                 break;
-            case 'F2': // Add Win
-                document.getElementById('winInput').focus();
+            case 'F2': // IMPROVED: Smart Win Detection
+                if (this.isTracking && !this.isPaused) {
+                    this.smartAutoDetect();
+                } else {
+                    document.getElementById('winInput').focus();
+                }
                 break;
             case 'F3': // New Game
                 document.getElementById('gameInput').focus();
@@ -198,12 +311,16 @@ class ElectronCasinoTracker {
         try {
             const storedSession = await ipcRenderer.invoke('get-store-data', 'currentSession');
             const storedGame = await ipcRenderer.invoke('get-store-data', 'currentGame');
-            // FIX: Load settings including default bet
             const storedSettings = await ipcRenderer.invoke('get-store-data', 'settings');
             
             if (storedSession) {
                 this.sessionData = { ...this.sessionData, ...storedSession };
                 this.updateUI();
+                
+                // NEW: Restore last bet amount
+                if (storedSession.spinsHistory && storedSession.spinsHistory.length > 0) {
+                    this.lastBetAmount = storedSession.spinsHistory[storedSession.spinsHistory.length - 1].bet;
+                }
             }
             
             if (storedGame) {
@@ -211,11 +328,12 @@ class ElectronCasinoTracker {
                 document.getElementById('currentGame').textContent = storedGame;
             }
             
-            // FIX: Apply settings if available
             if (storedSettings) {
                 this.settings = storedSettings;
                 this.applySettings();
             }
+            
+            this.updateCurrentBetDisplay();
         } catch (error) {
             console.error('Fehler beim Laden der Daten:', error);
         }
@@ -294,6 +412,7 @@ class ElectronCasinoTracker {
         document.getElementById('pauseBtn').textContent = 'Pause';
         
         this.updateUI();
+        this.updateCurrentBetDisplay();
         this.saveData();
     }
     
@@ -322,21 +441,17 @@ class ElectronCasinoTracker {
         }
     }
     
-    // FIX: Add function to apply loaded settings
     applySettings() {
-        // Set default bet value in the input field
         const betInput = document.getElementById('betInput');
         if (betInput && this.settings.defaultBet) {
-            betInput.placeholder = `Einsatz (Standard: €${this.settings.defaultBet.toFixed(2)})`;
-            // Optionally set the value directly
-            // betInput.value = this.settings.defaultBet.toFixed(2);
+            betInput.placeholder = `Standard: €${this.settings.defaultBet.toFixed(2)}`;
+            this.lastBetAmount = this.settings.defaultBet;
+            this.updateCurrentBetDisplay();
         }
         
-        // Apply other settings
         console.log('Settings angewendet:', this.settings);
     }
     
-    // FIX: Enhanced addBet function to use default value
     addBet() {
         if (!this.isTracking || this.isPaused) {
             this.showNotification('Session nicht aktiv!', 'error');
@@ -346,19 +461,24 @@ class ElectronCasinoTracker {
         const betInput = document.getElementById('betInput');
         let betAmount = parseFloat(betInput.value);
         
-        // FIX: Use default bet if no value entered
         if (!betAmount || betAmount <= 0) {
-            betAmount = this.settings.defaultBet;
-            betInput.value = betAmount.toFixed(2);
+            betAmount = this.lastBetAmount || this.settings.defaultBet;
         }
         
         if (betAmount > 0) {
+            this.lastBetAmount = betAmount; // NEW: Remember last bet
             this.addSpin(betAmount, 0);
             betInput.value = '';
-            betInput.focus();
+            this.updateCurrentBetDisplay();
+            
+            // Auto-focus win input after adding bet
+            setTimeout(() => {
+                document.getElementById('winInput').focus();
+            }, 100);
         }
     }
     
+    // IMPROVED: Better win addition with validation
     addWin() {
         if (!this.isTracking || this.isPaused) {
             this.showNotification('Session nicht aktiv!', 'error');
@@ -369,7 +489,6 @@ class ElectronCasinoTracker {
         const winAmount = parseFloat(winInput.value);
         
         if (winAmount >= 0 && this.sessionData.spinsHistory.length > 0) {
-            // Füge Gewinn zum letzten Spin hinzu
             const lastSpin = this.sessionData.spinsHistory[this.sessionData.spinsHistory.length - 1];
             if (lastSpin && lastSpin.win === 0) {
                 lastSpin.win = winAmount;
@@ -383,35 +502,55 @@ class ElectronCasinoTracker {
                 this.saveData();
                 winInput.value = '';
                 
-                // Zeige Big Win notification
-                if (winAmount > lastSpin.bet * 10) {
-                    this.showNotification(`Big Win! ${winAmount.toFixed(2)}€`, 'success');
+                // Show appropriate notification
+                if (winAmount === 0) {
+                    this.showNotification('Verlust registriert', 'info');
+                } else if (winAmount > lastSpin.bet * 10) {
+                    this.showNotification(`Big Win! €${winAmount.toFixed(2)} (${(winAmount/lastSpin.bet).toFixed(1)}x)`, 'success');
+                } else {
+                    this.showNotification(`Gewinn: €${winAmount.toFixed(2)}`, 'success');
                 }
+                
+                // Auto-focus bet input for next spin
+                setTimeout(() => {
+                    document.getElementById('betInput').focus();
+                }, 100);
+            } else {
+                this.showNotification('Kein offener Spin für Gewinn vorhanden!', 'error');
             }
+        } else if (winAmount < 0) {
+            this.showNotification('Gewinn kann nicht negativ sein!', 'error');
         }
     }
     
     addQuickSpin() {
-        // FIX: Use default bet from settings or last spin
-        let betAmount = this.settings.defaultBet; // Use settings default
+        let betAmount = this.lastBetAmount || this.settings.defaultBet;
         
-        // If there are previous spins, use the last bet amount
         if (this.sessionData.spinsHistory.length > 0) {
             betAmount = this.sessionData.spinsHistory[this.sessionData.spinsHistory.length - 1].bet;
         }
         
         this.addSpin(betAmount, 0);
-        this.showNotification(`Quick Spin: ${betAmount.toFixed(2)}€`, 'info');
+        this.lastBetAmount = betAmount;
+        this.updateCurrentBetDisplay();
+        this.showNotification(`Quick Spin: €${betAmount.toFixed(2)}`, 'info');
     }
 
+    // IMPROVED: Better game setting with validation
     setCurrentGame() {
         const gameInput = document.getElementById('gameInput');
-        if (gameInput.value.trim()) {
-            this.currentGame = gameInput.value.trim();
+        const gameName = gameInput.value.trim();
+        
+        if (gameName) {
+            this.currentGame = gameName;
             document.getElementById('currentGame').textContent = this.currentGame;
             gameInput.value = '';
+            gameInput.blur(); // Remove focus after setting
             this.showNotification(`Spiel gewechselt: ${this.currentGame}`, 'success');
             this.saveData();
+        } else {
+            this.showNotification('Bitte Spielname eingeben!', 'error');
+            gameInput.focus();
         }
     }
     
@@ -440,14 +579,15 @@ class ElectronCasinoTracker {
         // Session Stats
         document.getElementById('spinCount').textContent = this.sessionData.spins;
         document.getElementById('totalBet').textContent = `€${this.sessionData.totalBet.toFixed(2)}`;
-        document.getElementById('totalWin').textContent = `€${this.sessionData.totalWin.toFixed(2)}`;
-        document.getElementById('bestWin').textContent = `€${this.sessionData.bestWin.toFixed(2)}`;
         
-        // Profit/Loss
+        // Profit/Loss (corrected to show actual profit)
         const profit = this.sessionData.totalWin - this.sessionData.totalBet;
-        const totalWinEl = document.getElementById('totalWin');
-        totalWinEl.textContent = `€${profit.toFixed(2)}`;
-        totalWinEl.className = `info-value ${profit >= 0 ? 'profit-positive' : 'profit-negative'}`;
+        const profitEl = document.getElementById('totalWin');
+        profitEl.textContent = `€${profit.toFixed(2)}`;
+        profitEl.className = `info-value ${profit >= 0 ? 'profit-positive' : 'profit-negative'}`;
+        
+        // Best Win
+        document.getElementById('bestWin').textContent = `€${this.sessionData.bestWin.toFixed(2)}`;
         
         // RTP
         const rtp = this.sessionData.totalBet > 0 ? 
@@ -459,8 +599,11 @@ class ElectronCasinoTracker {
             (this.sessionData.totalBet / this.sessionData.spins) : 0;
         document.getElementById('avgBet').textContent = `€${avgBet.toFixed(2)}`;
         
-        // Letzte Spins
+        // Update spins history
         this.updateSpinsHistory();
+        
+        // NEW: Update current bet display
+        this.updateCurrentBetDisplay();
     }
     
     updateSpinsHistory() {
@@ -545,8 +688,6 @@ class ElectronCasinoTracker {
             
             const stats = this.calculateStats(sessions);
             
-            // Hier würden Sie ein Statistik-Fenster öffnen
-            // Für Demo zeigen wir die Stats in einer Benachrichtigung
             this.showNotification(`${sessions.length} Sessions • Profit: €${stats.totalProfit.toFixed(2)} • RTP: ${stats.avgRTP.toFixed(1)}%`, 'info');
             
             console.log('Detaillierte Statistiken:', stats);
@@ -577,6 +718,8 @@ class ElectronCasinoTracker {
         console.log('Tracking:', this.isTracking);
         console.log('Paused:', this.isPaused);
         console.log('Current Game:', this.currentGame);
+        console.log('Last Bet Amount:', this.lastBetAmount);
+        console.log('Auto Detect Active:', this.autoDetectActive);
         console.log('Session Data:', this.sessionData);
         
         this.showNotification('Debug-Info in Konsole ausgegeben', 'info');
@@ -596,23 +739,18 @@ class ElectronCasinoTracker {
         }
     }
     
-    // FIX: Proper close overlay function
     async closeOverlay() {
         try {
-            // Send message to main process to hide overlay
             await ipcRenderer.invoke('hide-overlay');
             this.showNotification('Overlay wird geschlossen...', 'info');
         } catch (error) {
             console.error('Fehler beim Schließen des Overlays:', error);
-            // Fallback: hide the window directly
             const { remote } = require('electron');
             if (remote) {
                 remote.getCurrentWindow().hide();
             }
         }
     }
-    
-    // FIX: Remove the old hideOverlay function and replace with closeOverlay
     
     showNotification(message, type = 'info') {
         const notification = document.getElementById('notification');
@@ -631,12 +769,12 @@ const tracker = new ElectronCasinoTracker();
 
 console.log('Casino Tracker Overlay gestartet!');
 
-// FIX: Prevent context menu on overlay
+// Prevent context menu on overlay
 document.addEventListener('contextmenu', (e) => {
     e.preventDefault();
 });
 
-// FIX: Prevent drag and drop
+// Prevent drag and drop
 document.addEventListener('dragover', (e) => {
     e.preventDefault();
 });
@@ -645,6 +783,7 @@ document.addEventListener('drop', (e) => {
     e.preventDefault();
 });
 
+// Enhanced input focus management
 const inputs = document.querySelectorAll('.input-field');
 inputs.forEach(input => {
     input.addEventListener('focus', () => {

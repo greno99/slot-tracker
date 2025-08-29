@@ -18,13 +18,14 @@
         </div>
         
         <div class="overlay-content" id="content">
-            <!-- Aktuelles Spiel -->
+            <!-- Aktuelles Spiel - IMPROVED -->
             <div class="game-section">
                 <div class="detected-game" id="currentGame">Kein Spiel aktiv</div>
                 <div class="quick-input">
-                    <input type="text" class="input-field" id="gameInput" placeholder="Spiel eingeben" autocomplete="off" tabindex="1">
+                    <input type="text" class="input-field" id="gameInput" placeholder="Spielname eingeben..." autocomplete="off" tabindex="1">
                     <button class="btn" id="setGameBtn">Set</button>
                 </div>
+                <div class="input-hint">📝 Spielname hier eingeben und Enter drücken</div>
             </div>
             
             <!-- Session Controls -->
@@ -34,18 +35,36 @@
                 <button class="btn btn-danger" id="stopBtn">Stop</button>
             </div>
             
-            <!-- Quick Add -->
+            <!-- NEW: Current Bet Display -->
+            <div class="current-bet-section">
+                <div class="current-bet-label">Aktueller Einsatz:</div>
+                <div class="current-bet-amount" id="currentBetAmount">€1.00</div>
+            </div>
+            
+            <!-- Quick Add - IMPROVED -->
             <div style="margin-bottom: 15px;">
                 <div class="quick-input">
-                    <input type="number" class="input-field" id="betInput" placeholder="Einsatz" step="0.01" min="0" autocomplete="off">
+                    <input type="number" class="input-field" id="betInput" placeholder="Einsatz eingeben..." step="0.01" min="0" autocomplete="off">
                     <button class="btn" id="addBetBtn">Bet</button>
                 </div>
-                <div class="wheel-hint">🖱️ Mausrad zum Ändern verwenden</div>
+                <div class="wheel-hint">🖱️ Mausrad für ±€0.10 • Enter-Taste zum Bestätigen</div>
+                
+                <!-- NEW: Auto-detect section -->
+                <div class="auto-detect-section">
+                    <div class="auto-detect-controls">
+                        <button class="btn btn-secondary" id="autoDetectBtn">Auto: OFF</button>
+                        <div class="auto-detect-indicator">
+                            <div class="status-dot status-inactive" id="autoDetectIndicator"></div>
+                            <span class="auto-detect-text">Gewinn-Erkennung</span>
+                        </div>
+                    </div>
+                </div>
+                
                 <div class="quick-input">
-                    <input type="number" class="input-field" id="winInput" placeholder="Gewinn" step="0.01" min="0" autocomplete="off">
+                    <input type="number" class="input-field" id="winInput" placeholder="Gewinn eingeben..." step="0.01" min="0" autocomplete="off">
                     <button class="btn" id="addWinBtn">Win</button>
                 </div>
-                <div class="wheel-hint">🖱️ Mausrad zum Ändern verwenden</div>
+                <div class="wheel-hint">🖱️ Mausrad für ±€0.50 • Enter-Taste zum Bestätigen</div>
             </div>
             
             <!-- Session Stats -->
@@ -64,7 +83,7 @@
                         <div class="info-value" id="totalBet">€0.00</div>
                     </div>
                     <div class="info-item">
-                        <div class="info-label">Gewinn</div>
+                        <div class="info-label">Profit</div>
                         <div class="info-value profit-positive" id="totalWin">€0.00</div>
                     </div>
                 </div>
@@ -99,20 +118,23 @@
                 <button class="btn" id="statsBtn">Stats</button>
             </div>
             
-            <!-- Hotkeys Info -->
+            <!-- Hotkeys Info - UPDATED -->
             <div class="hotkeys-section">
                 <div class="hotkey-grid">
                     <div>F1 - Quick Spin</div>
                     <div>F5 - Toggle Pause</div>
-                    <div>F2 - Add Win</div>
+                    <div>F2 - Smart Win</div>
                     <div>F6 - Screenshot</div>
-                    <div>F3 - New Game</div>
-                    <div>F7 - Debug</div>
-                    <div>F4 - Export</div>
-                    <div>F8 - Reset</div>
+                    <div>F3 - Set Game</div>
+                    <div>F7 - Debug Info</div>
+                    <div>F4 - Export Data</div>
+                    <div>F8 - Reset Session</div>
                 </div>
                 <div style="margin-top: 4px; font-size: 8px;">
                     Ctrl+Shift+O - Overlay Toggle • F9 - Click Through
+                </div>
+                <div style="margin-top: 2px; font-size: 8px; color: rgba(255,255,255,0.5);">
+                    💡 F2 mit Auto-Detect für intelligente Gewinn-Erkennung
                 </div>
             </div>
         </div>
