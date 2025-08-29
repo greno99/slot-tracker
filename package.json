@@ -38,7 +38,8 @@
   },
   "dependencies": {
     "electron-store": "^8.2.0",
-    "node-xlsx": "^0.23.0"
+    "node-xlsx": "^0.23.0",
+    "tesseract.js": "^5.1.1"
   },
   "keywords": [],
   "author": "",

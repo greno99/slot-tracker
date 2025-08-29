@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Casino Tracker - Statistiken</title>
+    <link rel="stylesheet" href="stats.css">
+</head>
+<body>
+    <button class="close-btn" id="closeBtn">×</button>
+    
+    <div class="stats-container">
+        <div class="stats-header">
+            <h1>Casino Session Statistiken</h1>
+            <p id="statsSubtitle">Lade Daten...</p>
+        </div>
+        
+        <div id="noDataMessage" class="no-data" style="display: none;">
+            <h3>Keine Daten verfügbar</h3>
+            <p>Starte eine Session und füge ein paar Spins hinzu, oder beende eine laufende Session um Statistiken zu sehen.</p>
+        </div>
+        
+        <div id="statsContent" style="display: none;">
+            <!-- Overview Cards -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="totalSessions">0</div>
+                    <div class="stat-label">Gesamt Sessions</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="totalSpins">0</div>
+                    <div class="stat-label">Gesamt Spins</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="totalProfit">€0.00</div>
+                    <div class="stat-label">Gesamt Profit</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="avgRTP">0%</div>
+                    <div class="stat-label">Durchschnittliche RTP</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="biggestWin">€0.00</div>
+                    <div class="stat-label">Größter Gewinn</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="avgSession">€0.00</div>
+                    <div class="stat-label">⌀ Profit pro Session</div>
+                </div>
+            </div>
+            
+            <!-- Profit/Loss Chart -->
+            <div class="chart-container">
+                <div class="chart-title">Profit/Verlust pro Session</div>
+                <div class="chart" id="profitChart"></div>
+            </div>
+            
+            <!-- RTP Chart -->
+            <div class="chart-container">
+                <div class="chart-title">RTP Verlauf</div>
+                <div class="chart" id="rtpChart"></div>
+            </div>
+            
+            <!-- Sessions Table -->
+            <div class="sessions-table">
+                <div class="chart-title">Session Details</div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Datum</th>
+                            <th>Spiel</th>
+                            <th>Dauer</th>
+                            <th>Spins</th>
+                            <th>Einsatz</th>
+                            <th>Gewinn</th>
+                            <th>Profit</th>
+                            <th>RTP</th>
+                        </tr>
+                    </thead>
+                    <tbody id="sessionsTableBody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <script src="stats.js"></script>
+</body>
+</html>

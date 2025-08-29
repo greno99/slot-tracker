@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spin Detection Setup</title>
+    <link rel="stylesheet" href="spin-detection.css">
+</head>
+
+<body>
+    <div class="container">
+        <h1>🎯 Automatische Spin-Erkennung Setup</h1>
+        <p>Konfiguriere die automatische Erkennung von Casino-Spins!</p>
+
+        <div class="step">
+            <h3>1. 📍 Spin-Button Position definieren</h3>
+            <p>Klicke auf "Setup starten" und dann auf deinen Casino Spin-Button</p>
+            <button class="btn" id="startSetupBtn">Setup starten</button>
+            <button class="btn btn-danger" id="stopSetupBtn" style="display:none;">Setup beenden</button>
+
+            <div class="coordinates" id="coordinates" style="display:none;">
+                <div>Mouse Position: <span id="mousePos">-</span></div>
+                <div>Spin Button: <span id="spinBtnPos">Noch nicht definiert</span></div>
+            </div>
+        </div>
+
+        <div class="step">
+            <h3>2. 🔍 Erkennungs-Bereiche festlegen</h3>
+            <p>Definiere wo sich Einsatz und Gewinn auf dem Bildschirm befinden</p>
+            <button class="btn" id="setBetAreaBtn">Einsatz-Bereich</button>
+            <button class="btn" id="setWinAreaBtn">Gewinn-Bereich</button>
+            <button class="btn" id="setBalanceAreaBtn">Guthaben-Bereich</button>
+
+            <div id="areas" style="display:none;">
+                <div>Einsatz-Bereich: <span id="betArea">-</span></div>
+                <div>Gewinn-Bereich: <span id="winArea">-</span></div>
+                <div>Guthaben-Bereich: <span id="balanceArea">-</span></div>
+            </div>
+        </div>
+
+        <div class="step">
+            <h3>3. 🧪 Test & Kalibrierung</h3>
+            <button class="btn btn-success" id="testDetectionBtn">Erkennung testen</button>
+            <button class="btn" id="takeScreenshotBtn">Screenshot erstellen</button>
+
+            <div class="preview" id="preview"></div>
+        </div>
+
+        <div class="step">
+            <h3>4. ⚡ Aktivierung</h3>
+            <p>Status: <span class="status status-inactive" id="detectionStatus">Inaktiv</span></p>
+            <button class="btn btn-success" id="startDetectionBtn">Auto-Detection starten</button>
+            <button class="btn btn-danger" id="stopDetectionBtn">Auto-Detection stoppen</button>
+        </div>
+
+        <div class="step">
+            <h3>📋 Erkennungs-Log</h3>
+            <div id="detectionLog"
+                style="max-height: 200px; overflow-y: auto; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 6px;">
+                <div style="color: #9ca3af;">Warte auf Aktivierung...</div>
+            </div>
+        </div>
+
+        <div style="text-align: center; margin-top: 20px;">
+            <button class="btn btn-danger" id="closeBtn">Schließen</button>
+        </div>
+    </div>
+
+    <script src="spin-detection.js"></script>
+</body>
+
+</html>

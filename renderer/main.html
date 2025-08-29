@@ -346,15 +346,38 @@
                 });
                 
                 // Aktualisierung alle 5 Sekunden
-                setInterval(() => {
-                    this.loadData();
+                setInterval(async () => {
+                    await this.loadData();
                     this.updateDashboard();
+                    this.updateSessionsTable(); // FIXED: Also update sessions table
                 }, 5000);
             }
             
             async loadData() {
                 try {
+                    // Load completed sessions
                     this.sessions = await ipcRenderer.invoke('get-store-data', 'sessions') || [];
+                    
+                    // Load current session if it exists
+                    const currentSession = await ipcRenderer.invoke('get-store-data', 'currentSession');
+                    
+                    // Combine both for display
+                    this.allSessions = [...this.sessions];
+                    
+                    if (currentSession && currentSession.spins > 0) {
+                        const currentGame = await ipcRenderer.invoke('get-store-data', 'currentGame') || 'Unbekannt';
+                        const currentSessionForDisplay = {
+                            ...currentSession,
+                            id: 'current',
+                            game: currentGame,
+                            endTime: Date.now(),
+                            profit: currentSession.totalWin - currentSession.totalBet,
+                            rtp: currentSession.totalBet > 0 ? (currentSession.totalWin / currentSession.totalBet * 100) : 0,
+                            isCurrent: true
+                        };
+                        this.allSessions.push(currentSessionForDisplay);
+                    }
+                    
                     this.settings = await ipcRenderer.invoke('get-store-data', 'settings') || this.settings;
                 } catch (error) {
                     console.error('Fehler beim Laden der Daten:', error);
@@ -398,32 +421,41 @@
                 const tbody = document.getElementById('sessionsTable');
                 tbody.innerHTML = '';
                 
-                if (this.sessions.length === 0) {
+                if (!this.allSessions || this.allSessions.length === 0) {
                     const row = document.createElement('tr');
                     row.innerHTML = '<td colspan="8" style="text-align: center; color: #718096;">Keine Sessions vorhanden</td>';
                     tbody.appendChild(row);
                     return;
                 }
                 
-                // Zeige die letzten 10 Sessions
-                const recentSessions = this.sessions.slice(-10).reverse();
+                // Show the last 15 sessions (including current session)
+                const recentSessions = this.allSessions.slice(-15).reverse();
                 
                 recentSessions.forEach(session => {
                     const row = document.createElement('tr');
                     
                     const date = new Date(session.startTime).toLocaleDateString('de-DE');
-                    const duration = this.formatDuration(session.endTime - session.startTime);
-                    const rtp = session.totalBet > 0 ? (session.totalWin / session.totalBet * 100) : 0;
+                    const duration = session.isCurrent ? 
+                        'Laufend 🔴' : 
+                        this.formatDuration((session.endTime || Date.now()) - session.startTime);
+                    const rtp = session.rtp || (session.totalBet > 0 ? (session.totalWin / session.totalBet * 100) : 0);
+                    const profit = session.profit || (session.totalWin - session.totalBet);
+                    
+                    // Style current session differently
+                    if (session.isCurrent) {
+                        row.style.backgroundColor = 'rgba(59, 130, 246, 0.1)';
+                        row.style.borderLeft = '4px solid #3b82f6';
+                    }
                     
                     row.innerHTML = `
-                        <td>${date}</td>
+                        <td>${date}${session.isCurrent ? ' 🟢' : ''}</td>
                         <td>${session.game || 'Unbekannt'}</td>
                         <td>${duration}</td>
-                        <td>${session.spins}</td>
-                        <td>€${session.totalBet.toFixed(2)}</td>
-                        <td>€${session.totalWin.toFixed(2)}</td>
-                        <td class="${session.profit >= 0 ? 'profit-positive' : 'profit-negative'}">
-                            €${session.profit.toFixed(2)}
+                        <td>${session.spins || 0}</td>
+                        <td>€${(session.totalBet || 0).toFixed(2)}</td>
+                        <td>€${(session.totalWin || 0).toFixed(2)}</td>
+                        <td class="${profit >= 0 ? 'profit-positive' : 'profit-negative'}">
+                            €${profit.toFixed(2)}
                         </td>
                         <td>${rtp.toFixed(1)}%</td>
                     `;

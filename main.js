@@ -1,5 +1,5 @@
 // main.js - Electron Hauptprozess (Fixed Version)
-const { app, BrowserWindow, globalShortcut, ipcMain, dialog, Menu, Tray, screen } = require('electron');
+const { app, BrowserWindow, globalShortcut, ipcMain, dialog, Menu, Tray, screen, desktopCapturer } = require('electron');
 const Store = require('electron-store');
 const path = require('path');
 const fs = require('fs');
@@ -10,6 +10,9 @@ let mainWindow;
 let overlayWindow;
 let tray;
 let isQuitting = false;
+let spinDetectionWindow;
+let mouseTracking = false;
+let spinDetectionActive = false;
 
 // App-Konfiguration
 const isDev = process.env.NODE_ENV === 'development';
@@ -89,8 +92,9 @@ function createOverlayWindow() {
     },
     // FIX: Ensure overlay stays on top
     level: 'screen-saver',  // Higher level than 'floating'
-    focusable: false,       // Prevent stealing focus
-    hasShadow: false       // Better transparency
+    focusable: true,       // Prevent stealing focus
+    hasShadow: false,       // Better transparency
+    acceptFirstMouse: true
   });
 
   overlayWindow.loadFile('renderer/overlay.html');
@@ -127,6 +131,111 @@ function createOverlayWindow() {
       overlayWindow.setAlwaysOnTop(true, 'screen-saver');
     }
   }, 5000);
+}
+
+function createStatsWindow() {
+  // Don't create multiple stats windows
+  const existingStatsWindow = BrowserWindow.getAllWindows().find(w => 
+    w.getTitle() === 'Casino Tracker - Statistiken'
+  );
+  
+  if (existingStatsWindow) {
+    existingStatsWindow.focus();
+    return;
+  }
+
+  const statsWindow = new BrowserWindow({
+    width: 1200,
+    height: 800,
+    webPreferences: {
+      nodeIntegration: true,
+      contextIsolation: false
+    },
+    icon: path.join(__dirname, 'assets/icon.png'),
+    title: 'Casino Tracker - Statistiken'
+  });
+
+  statsWindow.loadFile('renderer/stats.html');
+  
+  if (isDev) {
+    statsWindow.webContents.openDevTools();
+  }
+
+  statsWindow.show();
+}
+
+function createSpinDetectionWindow() {
+  // Don't create multiple detection windows
+  if (spinDetectionWindow && !spinDetectionWindow.isDestroyed()) {
+    spinDetectionWindow.focus();
+    return;
+  }
+
+  spinDetectionWindow = new BrowserWindow({
+    width: 900,
+    height: 700,
+    webPreferences: {
+      nodeIntegration: true,
+      contextIsolation: false
+    },
+    icon: path.join(__dirname, 'assets/icon.png'),
+    title: 'Spin Detection Setup'
+  });
+
+  spinDetectionWindow.loadFile('renderer/spin-detection.html');
+  
+  if (isDev) {
+    spinDetectionWindow.webContents.openDevTools();
+  }
+
+  spinDetectionWindow.show();
+  
+  spinDetectionWindow.on('closed', () => {
+    spinDetectionWindow = null;
+    // Stop any active detection when window closes
+    spinDetectionActive = false;
+    mouseTracking = false;
+  });
+}
+
+// Simplified spin monitoring function
+function startSpinMonitoring() {
+  if (!spinDetectionActive) return;
+  
+  const config = store.get('activeDetectionConfig');
+  if (!config || !config.spinButton) {
+    console.log('No valid detection config found');
+    return;
+  }
+  
+  console.log('Spin monitoring started at position:', config.spinButton);
+  
+  // Simple monitoring loop - in a real implementation this would:
+  // 1. Monitor mouse clicks at the specified position
+  // 2. Take screenshots when clicks are detected
+  // 3. Use OCR to read bet/win amounts
+  // 4. Send results to overlay
+  
+  const monitoringInterval = setInterval(() => {
+    if (!spinDetectionActive) {
+      clearInterval(monitoringInterval);
+      return;
+    }
+    
+    // Demo: Simulate random spin detection for testing
+    // Remove this in production!
+    if (Math.random() < 0.01) { // 1% chance per check
+      const demoSpin = {
+        bet: (Math.random() * 5 + 0.5).toFixed(2),
+        win: (Math.random() * 20).toFixed(2),
+        timestamp: Date.now()
+      };
+      
+      if (spinDetectionWindow && !spinDetectionWindow.isDestroyed()) {
+        spinDetectionWindow.webContents.send('spin-detected', demoSpin);
+      }
+    }
+  }, 1000); // Check every second
 }
 
 function createTray() {
@@ -328,8 +437,7 @@ ipcMain.handle('toggle-overlay', () => {
 
 ipcMain.on('overlay-focus-input', (event, isFocused) => {
   if (overlayWindow && !overlayWindow.isDestroyed()) {
-    overlayWindow.setIgnoreMouseEvents(!isFocused);
-    overlayWindow.setFocusable(isFocused);
+      overlayWindow.setIgnoreMouseEvents(false);
     if (isFocused) overlayWindow.focus();
   }
 });
@@ -347,6 +455,126 @@ ipcMain.handle('hide-overlay', () => {
 ipcMain.handle('quit-app', () => {
   isQuitting = true;
   app.quit();
+});
+
+// NEW: Add IPC handler for opening stats window
+ipcMain.handle('open-stats-window', () => {
+  createStatsWindow();
+});
+
+// SPIN DETECTION IPC HANDLERS
+ipcMain.handle('open-spin-detection', () => {
+  createSpinDetectionWindow();
+});
+
+ipcMain.handle('start-global-mouse-tracking', () => {
+  mouseTracking = true;
+  return { success: true };
+});
+
+ipcMain.handle('stop-global-mouse-tracking', () => {
+  mouseTracking = false;
+  return { success: true };
+});
+
+ipcMain.handle('save-detection-config', (event, config) => {
+  store.set('spinDetectionConfig', config);
+  return { success: true };
+});
+
+ipcMain.handle('start-area-selection', (event, areaType) => {
+  // Create overlay for area selection
+  createAreaSelectionOverlay(areaType);
+  return { success: true };
+});
+
+ipcMain.handle('save-selected-area', (event, areaType, coordinates) => {
+  const config = store.get('spinDetectionConfig') || {};
+  if (!config.areas) config.areas = {};
+  
+  config.areas[areaType] = coordinates;
+  store.set('spinDetectionConfig', config);
+  
+  // Notify the detection window
+  if (spinDetectionWindow && !spinDetectionWindow.isDestroyed()) {
+    spinDetectionWindow.webContents.send('area-configured', areaType, coordinates);
+  }
+  
+  return { success: true };
+});
+
+ipcMain.handle('take-detection-screenshot', async () => {
+  try {
+    const sources = await desktopCapturer.getSources({
+      types: ['screen'],
+      thumbnailSize: { width: 1920, height: 1080 }
+    });
+    
+    if (sources.length > 0) {
+      const screenshotPath = path.join(__dirname, 'screenshots', `detection-${Date.now()}.png`);
+      
+      // Ensure screenshots directory exists
+      const screenshotDir = path.dirname(screenshotPath);
+      if (!fs.existsSync(screenshotDir)) {
+        fs.mkdirSync(screenshotDir, { recursive: true });
+      }
+      
+      const imageBuffer = sources[0].thumbnail.toPNG();
+      fs.writeFileSync(screenshotPath, imageBuffer);
+      
+      return { success: true, path: screenshotPath };
+    }
+    
+    return { success: false, error: 'No screen sources available' };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('test-spin-detection', async (event, config) => {
+  try {
+    // Simple test - take screenshot and return dummy values for now
+    const screenshotResult = await desktopCapturer.getSources({
+      types: ['screen'],
+      thumbnailSize: { width: 1920, height: 1080 }
+    });
+    
+    // In a real implementation, this would use OCR to read values from specific screen areas
+    // For now, return dummy data
+    return {
+      success: true,
+      bet: '1.00',
+      win: '0.00',
+      balance: '100.00',
+      message: 'Test erfolgreich (Demo-Werte)'
+    };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('start-spin-detection', (event, config) => {
+  spinDetectionActive = true;
+  // Store config for detection
+  store.set('activeDetectionConfig', config);
+  
+  // Start monitoring (simplified for now)
+  startSpinMonitoring();
+  
+  return { success: true };
+});
+
+ipcMain.handle('stop-spin-detection', () => {
+  spinDetectionActive = false;
+  return { success: true };
+});
+
+ipcMain.handle('process-detected-spin', async (event, spinData) => {
+  // Forward detected spin to overlay for processing
+  if (overlayWindow && !overlayWindow.isDestroyed()) {
+    overlayWindow.webContents.send('auto-detected-spin', spinData);
+  }
+  return { success: true };
 });
 
 ipcMain.handle('export-data', async (event, data) => {
