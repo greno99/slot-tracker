@@ -92,10 +92,19 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            transition: background 0.2s;
         }
         
         .minimize-btn {
             background: rgba(251, 191, 36, 0.3);
+        }
+        
+        .minimize-btn:hover {
+            background: rgba(251, 191, 36, 0.5);
+        }
+        
+        .close-btn:hover {
+            background: rgba(239, 68, 68, 0.5);
         }
         
         .overlay-content {
@@ -142,6 +151,7 @@
             margin-bottom: 8px;
         }
         
+        /* FIX: Better input styling and functionality */
         .input-field {
             background: rgba(255, 255, 255, 0.1);
             border: 1px solid rgba(255, 255, 255, 0.3);
@@ -149,10 +159,29 @@
             color: white;
             padding: 6px 8px;
             font-size: 11px;
+            outline: none;
+            transition: border-color 0.2s;
+            -webkit-app-region: no-drag;
+        }
+        
+        .input-field:focus {
+            border-color: rgba(59, 130, 246, 0.6);
+            background: rgba(255, 255, 255, 0.15);
         }
         
         .input-field::placeholder {
             color: rgba(255, 255, 255, 0.4);
+        }
+        
+        /* FIX: Hide number input spinners for cleaner look */
+        .input-field::-webkit-outer-spin-button,
+        .input-field::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        
+        .input-field[type=number] {
+            -moz-appearance: textfield;
         }
         
         .btn {
@@ -165,6 +194,7 @@
             cursor: pointer;
             font-weight: 500;
             transition: all 0.2s;
+            -webkit-app-region: no-drag;
         }
         
         .btn:hover {
@@ -287,6 +317,14 @@
             border-radius: 6px;
             text-align: center;
         }
+        
+        /* FIX: Mouse wheel indicator */
+        .wheel-hint {
+            font-size: 8px;
+            color: rgba(255, 255, 255, 0.4);
+            text-align: center;
+            margin-top: 2px;
+        }
     </style>
 </head>
 <body>
@@ -305,7 +343,7 @@
             <div class="game-section">
                 <div class="detected-game" id="currentGame">Kein Spiel aktiv</div>
                 <div class="quick-input">
-                    <input type="text" class="input-field" id="gameInput" placeholder="Spiel eingeben">
+                    <input type="text" class="input-field" id="gameInput" placeholder="Spiel eingeben" autocomplete="off">
                     <button class="btn" id="setGameBtn">Set</button>
                 </div>
             </div>
@@ -320,13 +358,15 @@
             <!-- Quick Add -->
             <div style="margin-bottom: 15px;">
                 <div class="quick-input">
-                    <input type="number" class="input-field" id="betInput" placeholder="Einsatz" step="0.01" min="0">
+                    <input type="number" class="input-field" id="betInput" placeholder="Einsatz" step="0.01" min="0" autocomplete="off">
                     <button class="btn" id="addBetBtn">Bet</button>
                 </div>
+                <div class="wheel-hint">🖱️ Mausrad zum Ändern verwenden</div>
                 <div class="quick-input">
-                    <input type="number" class="input-field" id="winInput" placeholder="Gewinn" step="0.01" min="0">
+                    <input type="number" class="input-field" id="winInput" placeholder="Gewinn" step="0.01" min="0" autocomplete="off">
                     <button class="btn" id="addWinBtn">Win</button>
                 </div>
+                <div class="wheel-hint">🖱️ Mausrad zum Ändern verwenden</div>
             </div>
             
             <!-- Session Stats -->
@@ -422,10 +462,19 @@
                     spinsHistory: []
                 };
                 
+                // FIX: Add settings object with default values
+                this.settings = {
+                    defaultBet: 1.00,
+                    bigWinThreshold: 50.00,
+                    autoSave: true,
+                    notifications: true
+                };
+                
                 this.initEventListeners();
                 this.setupIPC();
                 this.loadStoredData();
                 this.startTimers();
+                this.setupMouseWheelHandlers(); // FIX: Add mouse wheel support
             }
             
             initEventListeners() {
@@ -434,7 +483,13 @@
                 document.getElementById('pauseBtn').addEventListener('click', () => this.togglePause());
                 document.getElementById('stopBtn').addEventListener('click', () => this.stopSession());
                 document.getElementById('minimizeBtn').addEventListener('click', () => this.toggleMinimize());
-                document.getElementById('closeBtn').addEventListener('click', () => this.hideOverlay());
+                
+                // FIX: Proper close button handler
+                document.getElementById('closeBtn').addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.closeOverlay();
+                });
                 
                 document.getElementById('setGameBtn').addEventListener('click', () => this.setCurrentGame());
                 document.getElementById('addBetBtn').addEventListener('click', () => this.addBet());
@@ -442,15 +497,76 @@
                 document.getElementById('exportBtn').addEventListener('click', () => this.exportData());
                 document.getElementById('statsBtn').addEventListener('click', () => this.showStats());
                 
-                // Input Enter-Handlers
+                // FIX: Better input handlers with proper event prevention
                 document.getElementById('gameInput').addEventListener('keypress', (e) => {
-                    if (e.key === 'Enter') this.setCurrentGame();
+                    e.stopPropagation();
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        this.setCurrentGame();
+                    }
                 });
+                
                 document.getElementById('betInput').addEventListener('keypress', (e) => {
-                    if (e.key === 'Enter') this.addBet();
+                    e.stopPropagation();
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        this.addBet();
+                    }
                 });
+                
                 document.getElementById('winInput').addEventListener('keypress', (e) => {
-                    if (e.key === 'Enter') this.addWin();
+                    e.stopPropagation();
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        this.addWin();
+                    }
+                });
+
+                // FIX: Prevent inputs from being affected by global shortcuts
+                const inputs = document.querySelectorAll('.input-field');
+                inputs.forEach(input => {
+                    input.addEventListener('focus', (e) => {
+                        e.stopPropagation();
+                    });
+                    input.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                    });
+                    input.addEventListener('keydown', (e) => {
+                        e.stopPropagation();
+                    });
+                });
+            }
+            
+            // FIX: Add mouse wheel support for number inputs
+            setupMouseWheelHandlers() {
+                const betInput = document.getElementById('betInput');
+                const winInput = document.getElementById('winInput');
+                
+                [betInput, winInput].forEach(input => {
+                    input.addEventListener('wheel', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        
+                        const step = parseFloat(input.step) || 0.01;
+                        const currentValue = parseFloat(input.value) || 0;
+                        
+                        if (e.deltaY < 0) {
+                            // Scroll up - increase value
+                            input.value = (currentValue + step).toFixed(2);
+                        } else {
+                            // Scroll down - decrease value
+                            const newValue = Math.max(0, currentValue - step);
+                            input.value = newValue.toFixed(2);
+                        }
+                        
+                        // Trigger change event
+                        input.dispatchEvent(new Event('change'));
+                    });
+                    
+                    // Show wheel hint on focus
+                    input.addEventListener('focus', () => {
+                        this.showNotification('Verwenden Sie das Mausrad zum Ändern des Werts', 'info');
+                    });
                 });
             }
             
@@ -463,9 +579,34 @@
                 ipcRenderer.on('screenshot-saved', (event, path) => {
                     this.showNotification(`Screenshot gespeichert: ${path}`, 'success');
                 });
+
+                // FIX: Listen for main window close events
+                ipcRenderer.on('main-window-closed', () => {
+                    this.closeOverlay();
+                });
+
+                // FIX: Listen for settings updates from main window
+                ipcRenderer.on('settings-updated', async () => {
+                    try {
+                        const storedSettings = await ipcRenderer.invoke('get-store-data', 'settings');
+                        if (storedSettings) {
+                            this.settings = storedSettings;
+                            this.applySettings();
+                            this.showNotification('Einstellungen aktualisiert', 'info');
+                        }
+                    } catch (error) {
+                        console.error('Fehler beim Laden der aktualisierten Einstellungen:', error);
+                    }
+                });
             }
             
             handleHotkey(key) {
+                // FIX: Don't process hotkeys when input is focused
+                const activeElement = document.activeElement;
+                if (activeElement && activeElement.tagName === 'INPUT') {
+                    return;
+                }
+
                 switch(key) {
                     case 'F1': // Quick Spin
                         if (this.isTracking && !this.isPaused) {
@@ -502,6 +643,8 @@
                 try {
                     const storedSession = await ipcRenderer.invoke('get-store-data', 'currentSession');
                     const storedGame = await ipcRenderer.invoke('get-store-data', 'currentGame');
+                    // FIX: Load settings including default bet
+                    const storedSettings = await ipcRenderer.invoke('get-store-data', 'settings');
                     
                     if (storedSession) {
                         this.sessionData = { ...this.sessionData, ...storedSession };
@@ -511,6 +654,12 @@
                     if (storedGame) {
                         this.currentGame = storedGame;
                         document.getElementById('currentGame').textContent = storedGame;
+                    }
+                    
+                    // FIX: Apply settings if available
+                    if (storedSettings) {
+                        this.settings = storedSettings;
+                        this.applySettings();
                     }
                 } catch (error) {
                     console.error('Fehler beim Laden der Daten:', error);
@@ -618,17 +767,21 @@
                 }
             }
             
-            setCurrentGame() {
-                const gameInput = document.getElementById('gameInput');
-                if (gameInput.value.trim()) {
-                    this.currentGame = gameInput.value.trim();
-                    document.getElementById('currentGame').textContent = this.currentGame;
-                    gameInput.value = '';
-                    this.showNotification(`Spiel gewechselt: ${this.currentGame}`, 'success');
-                    this.saveData();
+            // FIX: Add function to apply loaded settings
+            applySettings() {
+                // Set default bet value in the input field
+                const betInput = document.getElementById('betInput');
+                if (betInput && this.settings.defaultBet) {
+                    betInput.placeholder = `Einsatz (Standard: €${this.settings.defaultBet.toFixed(2)})`;
+                    // Optionally set the value directly
+                    // betInput.value = this.settings.defaultBet.toFixed(2);
                 }
+                
+                // Apply other settings
+                console.log('Settings angewendet:', this.settings);
             }
             
+            // FIX: Enhanced addBet function to use default value
             addBet() {
                 if (!this.isTracking || this.isPaused) {
                     this.showNotification('Session nicht aktiv!', 'error');
@@ -636,7 +789,13 @@
                 }
                 
                 const betInput = document.getElementById('betInput');
-                const betAmount = parseFloat(betInput.value);
+                let betAmount = parseFloat(betInput.value);
+                
+                // FIX: Use default bet if no value entered
+                if (!betAmount || betAmount <= 0) {
+                    betAmount = this.settings.defaultBet;
+                    betInput.value = betAmount.toFixed(2);
+                }
                 
                 if (betAmount > 0) {
                     this.addSpin(betAmount, 0);
@@ -678,14 +837,27 @@
             }
             
             addQuickSpin() {
-                // Verwende letzten Einsatz oder Standard-Einsatz
-                let betAmount = 1.00; // Standard
+                // FIX: Use default bet from settings or last spin
+                let betAmount = this.settings.defaultBet; // Use settings default
+                
+                // If there are previous spins, use the last bet amount
                 if (this.sessionData.spinsHistory.length > 0) {
                     betAmount = this.sessionData.spinsHistory[this.sessionData.spinsHistory.length - 1].bet;
                 }
                 
                 this.addSpin(betAmount, 0);
                 this.showNotification(`Quick Spin: ${betAmount.toFixed(2)}€`, 'info');
+            }
+
+            setCurrentGame() {
+                const gameInput = document.getElementById('gameInput');
+                if (gameInput.value.trim()) {
+                    this.currentGame = gameInput.value.trim();
+                    document.getElementById('currentGame').textContent = this.currentGame;
+                    gameInput.value = '';
+                    this.showNotification(`Spiel gewechselt: ${this.currentGame}`, 'success');
+                    this.saveData();
+                }
             }
             
             addSpin(betAmount, winAmount = 0) {
@@ -869,10 +1041,23 @@
                 }
             }
             
-            hideOverlay() {
-                // Verstecke das Overlay-Fenster
-                require('electron').remote.getCurrentWindow().hide();
+            // FIX: Proper close overlay function
+            async closeOverlay() {
+                try {
+                    // Send message to main process to hide overlay
+                    await ipcRenderer.invoke('hide-overlay');
+                    this.showNotification('Overlay wird geschlossen...', 'info');
+                } catch (error) {
+                    console.error('Fehler beim Schließen des Overlays:', error);
+                    // Fallback: hide the window directly
+                    const { remote } = require('electron');
+                    if (remote) {
+                        remote.getCurrentWindow().hide();
+                    }
+                }
             }
+            
+            // FIX: Remove the old hideOverlay function and replace with closeOverlay
             
             showNotification(message, type = 'info') {
                 const notification = document.getElementById('notification');
@@ -890,6 +1075,20 @@
         const tracker = new ElectronCasinoTracker();
         
         console.log('Casino Tracker Overlay gestartet!');
+        
+        // FIX: Prevent context menu on overlay
+        document.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+        });
+        
+        // FIX: Prevent drag and drop
+        document.addEventListener('dragover', (e) => {
+            e.preventDefault();
+        });
+        
+        document.addEventListener('drop', (e) => {
+            e.preventDefault();
+        });
     </script>
 </body>
 </html>

@@ -42,5 +42,13 @@
   },
   "keywords": [],
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/greno99/slot-tracker.git"
+  },
+  "bugs": {
+    "url": "https://github.com/greno99/slot-tracker/issues"
+  },
+  "homepage": "https://github.com/greno99/slot-tracker#readme"
 }

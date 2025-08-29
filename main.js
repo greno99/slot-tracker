@@ -1,4 +1,4 @@
-// main.js - Electron Hauptprozess
+// main.js - Electron Hauptprozess (Fixed Version)
 const { app, BrowserWindow, globalShortcut, ipcMain, dialog, Menu, Tray, screen } = require('electron');
 const Store = require('electron-store');
 const path = require('path');
@@ -9,6 +9,7 @@ const store = new Store();
 let mainWindow;
 let overlayWindow;
 let tray;
+let isQuitting = false;
 
 // App-Konfiguration
 const isDev = process.env.NODE_ENV === 'development';
@@ -36,12 +37,34 @@ function createMainWindow() {
     mainWindow.show();
   });
 
+  // FIX: Proper window closing behavior
+  mainWindow.on('close', (event) => {
+    if (!isQuitting) {
+      event.preventDefault();
+      mainWindow.hide();
+      
+      // FIX: Notify overlay that main window is closing
+      sendToOverlay('main-window-closed');
+      
+      // Show tray notification on first minimize
+      if (tray && !mainWindow.isDestroyed()) {
+        tray.displayBalloon({
+          iconType: 'info',
+          title: 'Casino Tracker',
+          content: 'App läuft im Hintergrund weiter. Rechtsklick auf das Tray-Icon für Optionen.'
+        });
+      }
+    }
+  });
+
   mainWindow.on('closed', () => {
     mainWindow = null;
   });
 
-  mainWindow.on('minimize', () => {
+  // FIX: Better minimize behavior
+  mainWindow.on('minimize', (event) => {
     if (process.platform === 'win32') {
+      event.preventDefault();
       mainWindow.hide();
     }
   });
@@ -63,11 +86,19 @@ function createOverlayWindow() {
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false
-    }
+    },
+    // FIX: Ensure overlay stays on top
+    level: 'screen-saver',  // Higher level than 'floating'
+    focusable: false,       // Prevent stealing focus
+    hasShadow: false       // Better transparency
   });
 
   overlayWindow.loadFile('renderer/overlay.html');
   overlayWindow.setIgnoreMouseEvents(false);
+  
+  // FIX: Ensure overlay is always on top
+  overlayWindow.setAlwaysOnTop(true, 'screen-saver');
+  overlayWindow.setVisibleOnAllWorkspaces(true);
 
   // Overlay kann durch Klicken durch transparent gemacht werden
   overlayWindow.webContents.on('before-input-event', (event, input) => {
@@ -76,6 +107,26 @@ function createOverlayWindow() {
       overlayWindow.setIgnoreMouseEvents(!isIgnoring);
     }
   });
+
+  // FIX: Handle overlay window events
+  overlayWindow.on('closed', () => {
+    overlayWindow = null;
+  });
+
+  // FIX: Prevent overlay from being closed accidentally
+  overlayWindow.on('close', (event) => {
+    if (!isQuitting) {
+      event.preventDefault();
+      overlayWindow.hide();
+    }
+  });
+
+  // FIX: Refresh overlay position periodically to ensure it stays on top
+  setInterval(() => {
+    if (overlayWindow && !overlayWindow.isDestroyed() && overlayWindow.isVisible()) {
+      overlayWindow.setAlwaysOnTop(true, 'screen-saver');
+    }
+  }, 5000);
 }
 
 function createTray() {
@@ -88,6 +139,8 @@ function createTray() {
         if (mainWindow) {
           mainWindow.show();
           mainWindow.focus();
+        } else {
+          createMainWindow();
         }
       }
     },
@@ -99,21 +152,26 @@ function createTray() {
             overlayWindow.hide();
           } else {
             overlayWindow.show();
+            overlayWindow.setAlwaysOnTop(true, 'screen-saver');
           }
+        } else {
+          createOverlayWindow();
         }
       }
     },
     { type: 'separator' },
+    // FIX: Add explicit quit option
     {
-      label: 'Beenden',
+      label: 'Komplett beenden',
       click: () => {
+        isQuitting = true;
         app.quit();
       }
     }
   ]);
 
   tray.setContextMenu(contextMenu);
-  tray.setToolTip('Casino Tracker');
+  tray.setToolTip('Casino Tracker - Rechtsklick für Optionen');
 
   tray.on('double-click', () => {
     if (mainWindow) {
@@ -123,6 +181,22 @@ function createTray() {
         mainWindow.show();
         mainWindow.focus();
       }
+    } else {
+      createMainWindow();
+    }
+  });
+
+  // FIX: Add click handler for tray
+  tray.on('click', () => {
+    if (mainWindow) {
+      if (mainWindow.isVisible()) {
+        mainWindow.focus();
+      } else {
+        mainWindow.show();
+        mainWindow.focus();
+      }
+    } else {
+      createMainWindow();
     }
   });
 }
@@ -170,8 +244,17 @@ function registerGlobalShortcuts() {
         overlayWindow.hide();
       } else {
         overlayWindow.show();
+        overlayWindow.setAlwaysOnTop(true, 'screen-saver');
       }
+    } else {
+      createOverlayWindow();
     }
+  });
+
+  // FIX: Add emergency quit shortcut
+  globalShortcut.register('CommandOrControl+Shift+Q', () => {
+    isQuitting = true;
+    app.quit();
   });
 }
 
@@ -219,7 +302,43 @@ ipcMain.handle('get-store-data', (event, key) => {
 });
 
 ipcMain.handle('set-store-data', (event, key, value) => {
-  return store.set(key, value);
+  store.set(key, value);
+  
+  // FIX: Notify overlay when settings are updated
+  if (key === 'settings') {
+    sendToOverlay('settings-updated');
+  }
+  
+  return true;
+});
+
+// FIX: Add IPC handler for overlay toggle
+ipcMain.handle('toggle-overlay', () => {
+  if (overlayWindow) {
+    if (overlayWindow.isVisible()) {
+      overlayWindow.hide();
+    } else {
+      overlayWindow.show();
+      overlayWindow.setAlwaysOnTop(true, 'screen-saver');
+    }
+  } else {
+    createOverlayWindow();
+  }
+});
+
+// FIX: Add IPC handler for hiding overlay
+ipcMain.handle('hide-overlay', () => {
+  if (overlayWindow && !overlayWindow.isDestroyed()) {
+    overlayWindow.hide();
+    return { success: true };
+  }
+  return { success: false, error: 'Overlay window not found' };
+});
+
+// FIX: Add IPC handler for app quit
+ipcMain.handle('quit-app', () => {
+  isQuitting = true;
+  app.quit();
 });
 
 ipcMain.handle('export-data', async (event, data) => {
@@ -274,12 +393,12 @@ async function exportToExcel(filePath, data) {
       sessionData.push([
         new Date(session.startTime).toLocaleDateString('de-DE'),
         session.game || 'Unbekannt',
-        session.rounds,
+        session.spins,
         session.totalBet.toFixed(2),
         session.totalWin.toFixed(2),
         profit.toFixed(2),
         rtp,
-        formatDuration(session.playTime || 0)
+        formatDuration(session.endTime - session.startTime || 0)
       ]);
     });
     
@@ -287,25 +406,34 @@ async function exportToExcel(filePath, data) {
   }
   
   // Spins Worksheet
-  if (data.allSpins && data.allSpins.length > 0) {
-    const spinData = [
-      ['Datum', 'Zeit', 'Spiel', 'Einsatz', 'Gewinn', 'Multiplier']
-    ];
+  if (data.sessions && data.sessions.length > 0) {
+    const allSpins = data.sessions.reduce((acc, session) => {
+      if (session.spinsHistory) {
+        return acc.concat(session.spinsHistory);
+      }
+      return acc;
+    }, []);
     
-    data.allSpins.forEach(spin => {
-      const multiplier = spin.bet > 0 ? (spin.win / spin.bet).toFixed(2) : 0;
+    if (allSpins.length > 0) {
+      const spinData = [
+        ['Datum', 'Zeit', 'Spiel', 'Einsatz', 'Gewinn', 'Multiplier']
+      ];
       
-      spinData.push([
-        new Date(spin.time).toLocaleDateString('de-DE'),
-        new Date(spin.time).toLocaleTimeString('de-DE'),
-        spin.game || 'Unbekannt',
-        spin.bet.toFixed(2),
-        spin.win.toFixed(2),
-        `${multiplier}x`
-      ]);
-    });
-    
-    worksheets.push({ name: 'Spins', data: spinData });
+      allSpins.forEach(spin => {
+        const multiplier = spin.bet > 0 ? (spin.win / spin.bet).toFixed(2) : 0;
+        
+        spinData.push([
+          new Date(spin.time).toLocaleDateString('de-DE'),
+          new Date(spin.time).toLocaleTimeString('de-DE'),
+          spin.game || 'Unbekannt',
+          spin.bet.toFixed(2),
+          spin.win.toFixed(2),
+          `${multiplier}x`
+        ]);
+      });
+      
+      worksheets.push({ name: 'Spins', data: spinData });
+    }
   }
   
   const buffer = xlsx.build(worksheets);
@@ -328,12 +456,12 @@ async function exportToCSV(filePath, data) {
     csvData.push([
       new Date(session.startTime).toLocaleDateString('de-DE'),
       session.game || 'Unbekannt',
-      session.rounds,
+      session.spins,
       session.totalBet.toFixed(2),
       session.totalWin.toFixed(2),
       profit.toFixed(2),
       rtp,
-      formatDuration(session.playTime || 0)
+      formatDuration(session.endTime - session.startTime || 0)
     ].join(','));
   });
   
@@ -365,9 +493,35 @@ app.whenReady().then(() => {
   });
 });
 
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit();
+// FIX: Improved window closing behavior
+app.on('window-all-closed', (event) => {
+  // FIX: Don't quit on window close - keep running in tray
+  event.preventDefault();
+});
+
+// FIX: Proper quit handling
+app.on('before-quit', (event) => {
+  if (!isQuitting) {
+    event.preventDefault();
+    
+    // Ask user if they really want to quit
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      const response = dialog.showMessageBoxSync(mainWindow, {
+        type: 'question',
+        buttons: ['Abbrechen', 'Im Hintergrund weiterlaufen', 'Komplett beenden'],
+        defaultId: 1,
+        title: 'Casino Tracker beenden?',
+        message: 'Möchten Sie die Anwendung komplett beenden oder im Hintergrund weiterlaufen lassen?'
+      });
+      
+      if (response === 2) { // Komplett beenden
+        isQuitting = true;
+        app.quit();
+      }
+      // response === 1 (Hintergrund) or 0 (Abbrechen) - do nothing
+    } else {
+      isQuitting = true;
+    }
   }
 });
 
@@ -375,8 +529,8 @@ app.on('will-quit', () => {
   globalShortcut.unregisterAll();
 });
 
-app.on('before-quit', () => {
-  // Cleanup
+// FIX: Cleanup on quit
+app.on('quit', () => {
   if (tray) {
     tray.destroy();
   }
@@ -392,6 +546,8 @@ if (!gotTheLock) {
     if (mainWindow) {
       if (mainWindow.isMinimized()) mainWindow.restore();
       mainWindow.focus();
+    } else {
+      createMainWindow();
     }
   });
 }
