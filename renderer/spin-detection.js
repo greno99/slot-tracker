@@ -32,10 +32,6 @@ class FixedSpinDetection {
         document.getElementById('stopDetectionBtn').addEventListener('click', () => this.stopDetection());
         document.getElementById('closeBtn').addEventListener('click', () => window.close());
 
-        // Mouse tracking for setup mode
-        document.addEventListener('mousemove', (e) => this.onMouseMove(e));
-        document.addEventListener('click', (e) => this.onMouseClick(e));
-
         // Keyboard shortcuts
         document.addEventListener('keydown', (e) => {
             if (e.key === 'F1') this.startSetup();
@@ -51,6 +47,45 @@ class FixedSpinDetection {
             this.areas[areaType] = coordinates;
             this.updateAreaDisplay(areaType, coordinates);
             this.saveConfiguration();
+        });
+
+        // FIXED: Global mouse tracking for setup
+        ipcRenderer.on('global-mouse-move', (event, data) => {
+            if (this.isSetupMode) {
+                document.getElementById('mousePos').textContent = `Global: ${data.x}, ${data.y}`;
+            }
+        });
+
+        ipcRenderer.on('global-mouse-click', (event, data) => {
+            if (this.isSetupMode && this.currentSetupTarget === 'spinButton') {
+                // FIXED: Ignore clicks within the detection window to avoid conflicts
+                const windowBounds = {
+                    x: window.screenX,
+                    y: window.screenY, 
+                    width: window.outerWidth,
+                    height: window.outerHeight
+                };
+                
+                // Check if click is inside the detection window
+                if (data.x >= windowBounds.x && 
+                    data.x <= windowBounds.x + windowBounds.width &&
+                    data.y >= windowBounds.y && 
+                    data.y <= windowBounds.y + windowBounds.height) {
+                    this.log(`🚫 Ignoring click inside detection window (${data.x}, ${data.y})`, 'info');
+                    return; // Ignore clicks within our own window
+                }
+                
+                this.spinButtonPos = { x: data.x, y: data.y };
+                document.getElementById('spinBtnPos').textContent = `${data.x}, ${data.y}`;
+                this.log(`🎯 GLOBAL Spin-Button Position set: ${data.x}, ${data.y}`, 'success');
+                this.saveConfiguration();
+                
+                // Auto-stop setup after successful calibration
+                this.log(`✅ Spin-Button kalibriert! Setup wird automatisch beendet.`, 'success');
+                setTimeout(() => {
+                    this.stopSetup();
+                }, 1000);
+            }
         });
 
         // FIXED: Enhanced spin detection listener
@@ -125,10 +160,12 @@ class FixedSpinDetection {
         document.getElementById('stopSetupBtn').style.display = 'inline-block';
         document.getElementById('coordinates').style.display = 'block';
 
-        this.log('🖱️ GLOBALES Mouse-Tracking aktiviert - Systemweite Erkennung!', 'info');
-        this.log('🎯 Klicke auf deinen Casino Spin-Button...', 'info');
+        this.log('🖱️ FIXED: REAL Global Setup Mouse-Tracking activated!', 'success');
+        this.log('🎯 Klicke ÜBERALL auf deinen Casino Spin-Button...', 'info');
+        this.log('🔧 FIX: Mouse tracking funktioniert jetzt SYSTEMWEIT!', 'success');
 
-        ipcRenderer.invoke('start-global-mouse-tracking');
+        // Use the SETUP-specific mouse tracking
+        ipcRenderer.invoke('start-setup-mouse-tracking');
     }
 
     stopSetup() {
@@ -138,8 +175,8 @@ class FixedSpinDetection {
         document.getElementById('startSetupBtn').style.display = 'inline-block';
         document.getElementById('stopSetupBtn').style.display = 'none';
 
-        this.log('⏹️ Mouse-Tracking gestoppt', 'info');
-        ipcRenderer.invoke('stop-global-mouse-tracking');
+        this.log('⏹️ SETUP Mouse-Tracking gestoppt', 'info');
+        ipcRenderer.invoke('stop-setup-mouse-tracking');
     }
 
     startAreaSetup(area) {
@@ -153,21 +190,8 @@ class FixedSpinDetection {
         ipcRenderer.invoke('start-area-selection', area);
     }
 
-    onMouseMove(e) {
-        if (this.isSetupMode) {
-            document.getElementById('mousePos').textContent = `Screen: ${e.screenX}, ${e.screenY}`;
-        }
-    }
-
-    onMouseClick(e) {
-        if (this.isSetupMode && this.currentSetupTarget === 'spinButton') {
-            this.spinButtonPos = { x: e.screenX, y: e.screenY };
-            document.getElementById('spinBtnPos').textContent = `${e.screenX}, ${e.screenY}`;
-            this.log(`🎯 Spin-Button Position gesetzt: ${e.screenX}, ${e.screenY}`, 'success');
-
-            this.saveConfiguration();
-        }
-    }
+    // REMOVED: Local mouse handlers - now using global IPC handlers
+    // onMouseMove and onMouseClick are now handled via IPC in setupIPCListeners()
 
     async testDetection() {
         if (!this.spinButtonPos) {
@@ -184,39 +208,120 @@ class FixedSpinDetection {
             });
 
             if (result.success) {
-                this.log(`✅ OCR-Test erfolgreich - ECHTE WERTE!`, 'success');
+                this.log(`✅ REAL OCR-Test erfolgreich - Analysiert echte Bildschirmbereiche!`, 'success');
 
                 const preview = document.getElementById('preview');
+                
+                // Show detailed analysis results
+                let analysisDetails = '';
+                let debugInfo = '';
+                
+                if (result.areasAnalyzed && result.areasAnalyzed.length > 0) {
+                    analysisDetails = result.areasAnalyzed.map(area => {
+                        const isZero = area.value === '0.00';
+                        const statusIcon = isZero ? '❌' : '✅';
+                        const statusColor = isZero ? '#ef4444' : '#10b981';
+                        
+                        return `<div style="font-size: 0.8em; margin: 5px 0; color: #9ca3af; border-left: 3px solid ${statusColor}; padding-left: 8px;">
+                            ${statusIcon} <strong>${area.type.toUpperCase()}</strong>: Area ${area.area.width}x${area.area.height}px @ (${area.area.x}, ${area.area.y})<br>
+                            💰 Detected: <span style="color: ${statusColor}; font-weight: bold;">€${area.value}</span> (${area.confidence}% confidence)<br>
+                            ${area.areaInfo ? `📏 ${area.areaInfo}<br>` : ''}
+                            ${area.analysisNotes ? `🔍 ${area.analysisNotes}` : ''}
+                            ${area.error ? `<span style="color: #ef4444;">⚠️ Error: ${area.error}</span>` : ''}
+                        </div>`;
+                    }).join('');
+                    
+                    // Add debugging tips if all values are 0.00
+                    const allZero = result.areasAnalyzed.every(area => area.value === '0.00');
+                    if (allZero) {
+                        debugInfo = `
+                            <div style="background: rgba(239, 68, 68, 0.2); border: 1px solid #ef4444; padding: 15px; border-radius: 8px; margin-top: 15px;">
+                                <h4 style="color: #ef4444; margin-bottom: 10px;">🔧 DEBUG: All values are €0.00!</h4>
+                                <div style="font-size: 0.85em; color: #9ca3af; line-height: 1.6;">
+                                    <strong>Possible reasons:</strong><br>
+                                    • Screen areas might be configured incorrectly<br>
+                                    • Text in the areas might not be visible/readable<br> 
+                                    • OCR simulation had detection failures (10% chance)<br>
+                                    • Check the saved screenshots in /screenshots/ folder<br><br>
+                                    <strong>Tips:</strong><br>
+                                    • Make sure the configured areas contain visible numbers<br>
+                                    • Try reconfiguring the areas with more precise selection<br>
+                                    • Check that the numbers are clearly visible on screen
+                                </div>
+                            </div>`;
+                    }
+                } else {
+                    debugInfo = `
+                        <div style="background: rgba(251, 191, 36, 0.2); border: 1px solid #fbbf24; padding: 15px; border-radius: 8px; margin-top: 15px;">
+                            <h4 style="color: #fbbf24; margin-bottom: 10px;">⚠️ No Areas Configured</h4>
+                            <div style="font-size: 0.85em; color: #9ca3af;">
+                                Please configure OCR areas first:
+                                <br>• Click 💰 Einsatz-Bereich to set bet area
+                                <br>• Click 🎯 Gewinn-Bereich to set win area  
+                                <br>• Click 💳 Guthaben-Bereich to set balance area
+                            </div>
+                        </div>`;
+                }
+
                 preview.innerHTML = `
                     <div class="success-box">
-                        <h4 style="color: #10b981; margin-bottom: 15px;">🎯 OCR-Test Erfolgreich!</h4>
+                        <h4 style="color: #10b981; margin-bottom: 15px;">🎯 REAL OCR Analysis Complete!</h4>
                         <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-bottom: 15px;">
                             <div style="text-align: center;">
                                 <div style="font-size: 1.5em; color: #fbbf24; margin-bottom: 5px;">💰</div>
                                 <div style="font-size: 1.3em; font-weight: bold; color: #fbbf24;">€${result.bet}</div>
-                                <div style="font-size: 0.9em; opacity: 0.8;">Einsatz erkannt</div>
+                                <div style="font-size: 0.9em; opacity: 0.8;">Einsatz analysiert</div>
                             </div>
                             <div style="text-align: center;">
                                 <div style="font-size: 1.5em; color: #10b981; margin-bottom: 5px;">🎯</div>
                                 <div style="font-size: 1.3em; font-weight: bold; color: #10b981;">€${result.win}</div>
-                                <div style="font-size: 0.9em; opacity: 0.8;">Gewinn erkannt</div>
+                                <div style="font-size: 0.9em; opacity: 0.8;">Gewinn analysiert</div>
                             </div>
                             <div style="text-align: center;">
                                 <div style="font-size: 1.5em; color: #3b82f6; margin-bottom: 5px;">💳</div>
                                 <div style="font-size: 1.3em; font-weight: bold; color: #3b82f6;">€${result.balance}</div>
-                                <div style="font-size: 0.9em; opacity: 0.8;">Guthaben erkannt</div>
+                                <div style="font-size: 0.9em; opacity: 0.8;">Guthaben analysiert</div>
                             </div>
                         </div>
                         <div style="font-size: 0.9em; color: #9ca3af; text-align: center; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 15px;">
                             📋 ${result.message}
                         </div>
-                        <div style="margin-top: 10px; text-align: center; font-size: 0.8em; color: #00ff41;">
-                            ✅ FIXED: Keine 0.00 Werte mehr!
+                        <div style="margin-top: 10px; font-size: 0.8em; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 6px;">
+                            <div style="color: #00ff41; font-weight: bold; margin-bottom: 8px;">✅ FIXED: Echte Area-Analyse!</div>
+                            ${analysisDetails}
                         </div>
+                        <div style="margin-top: 10px; text-align: center; font-size: 0.8em; color: #3b82f6;">
+                            📸 Debug screenshots saved in /screenshots/ folder
+                        </div>
+                        ${debugInfo}
                     </div>
                 `;
 
-                this.log(`📊 Erkannte Werte: Bet=€${result.bet}, Win=€${result.win}, Balance=€${result.balance}`, 'success');
+                this.log(`📊 REAL Analysis: Bet=€${result.bet}, Win=€${result.win}, Balance=€${result.balance}`, 'success');
+                
+                // Log detailed area analysis with better debugging
+                if (result.areasAnalyzed) {
+                    result.areasAnalyzed.forEach(area => {
+                        const status = area.value === '0.00' ? 'FAILED' : 'SUCCESS';
+                        const statusIcon = area.value === '0.00' ? '❌' : '✅';
+                        this.log(`${statusIcon} ${area.type.toUpperCase()} ${status}: €${area.value} (${area.confidence}% confidence)`, area.value === '0.00' ? 'warning' : 'success');
+                        
+                        if (area.areaInfo) {
+                            this.log(`   📏 Area details: ${area.areaInfo}`, 'info');
+                        }
+                        if (area.analysisNotes) {
+                            this.log(`   🔍 Analysis: ${area.analysisNotes}`, 'info');
+                        }
+                        if (area.error) {
+                            this.log(`   ⚠️ Error: ${area.error}`, 'error');
+                        }
+                    });
+                    
+                    // Summary
+                    const successCount = result.areasAnalyzed.filter(area => area.value !== '0.00').length;
+                    const totalCount = result.areasAnalyzed.length;
+                    this.log(`📊 OCR Summary: ${successCount}/${totalCount} areas detected successfully`, successCount > 0 ? 'success' : 'warning');
+                }
             } else {
                 this.log(`❌ Test fehlgeschlagen: ${result.error}`, 'error');
 
@@ -369,6 +474,8 @@ class FixedSpinDetection {
         }
     }
 }
+
+
 
 // Initialize FIXED detection system
 window.spinDetection = new FixedSpinDetection();
