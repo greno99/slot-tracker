@@ -5,6 +5,8 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
+    "test-ocr": "node test-ocr.js",
+    "debug-area": "electron debug-area-selection.js",
     "build": "electron-builder",
     "dist": "electron-builder --publish=never"
   },

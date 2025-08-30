@@ -242,7 +242,7 @@ while ($true) {
                 console.log('🔍 Running REAL OCR on configured areas...');
                 
                 for (const [areaType, area] of Object.entries(this.config.areas)) {
-                    if (area) {
+                    if (area && this.validateArea(area, areaType)) {
                         try {
                             const ocrResult = await this.ocrEngine.analyzeAreaWithOCR(
                                 screenshot.toPNG(), 
@@ -262,6 +262,8 @@ while ($true) {
                             console.error(`OCR error for ${areaType}:`, ocrError);
                             results[areaType] = 0;
                         }
+                    } else {
+                        console.warn(`⚠️ Skipping invalid area for ${areaType}:`, area);
                     }
                 }
             } else {
@@ -292,6 +294,43 @@ while ($true) {
         
         console.log('💰 Extracted data (REAL OCR):', results);
         return results;
+    }
+    
+    validateArea(area, areaType) {
+        if (!area || typeof area !== 'object') {
+            console.warn(`❌ Invalid area object for ${areaType}:`, area);
+            return false;
+        }
+        
+        const { x, y, width, height } = area;
+        
+        // Check if all required properties exist and are numbers
+        if (typeof x !== 'number' || typeof y !== 'number' || 
+            typeof width !== 'number' || typeof height !== 'number') {
+            console.warn(`❌ Invalid area coordinates for ${areaType}:`, area);
+            return false;
+        }
+        
+        // Check for reasonable bounds
+        if (x < 0 || y < 0 || width <= 0 || height <= 0) {
+            console.warn(`❌ Invalid area dimensions for ${areaType}:`, area);
+            return false;
+        }
+        
+        // Check if area is too large (probably invalid)
+        if (width > 5000 || height > 5000) {
+            console.warn(`❌ Area too large for ${areaType}:`, area);
+            return false;
+        }
+        
+        // Check if area is too small (might not contain readable text)
+        if (width < 10 || height < 5) {
+            console.warn(`❌ Area too small for ${areaType}:`, area);
+            return false;
+        }
+        
+        console.log(`✅ Area validation passed for ${areaType}`);
+        return true;
     }
 
     async takeScreenshot() {
@@ -341,10 +380,73 @@ while ($true) {
             this.mouseListener.kill();
             this.mouseListener = null;
         }
+        
+        // Cleanup OCR engine
+        if (this.ocrEngine) {
+            this.ocrEngine.terminate().catch(err => {
+                console.warn('OCR engine cleanup warning:', err.message);
+            });
+        }
     }
 }
 
 const detectionEngine = new CasinoDetectionEngine();
+
+// Helper function for area validation
+function validateAreaForOCR(area, areaType, screenshotMetadata) {
+  if (!area || typeof area !== 'object') {
+    return {
+      valid: false,
+      error: `Invalid area object for ${areaType}`
+    };
+  }
+  
+  const { x, y, width, height } = area;
+  
+  // Check if all required properties exist and are numbers
+  if (typeof x !== 'number' || typeof y !== 'number' || 
+      typeof width !== 'number' || typeof height !== 'number') {
+    return {
+      valid: false,
+      error: `Invalid area coordinates - all values must be numbers`
+    };
+  }
+  
+  // Check for reasonable bounds
+  if (x < 0 || y < 0 || width <= 0 || height <= 0) {
+    return {
+      valid: false,
+      error: `Invalid area dimensions - negative or zero values`
+    };
+  }
+  
+  // Check if area exceeds screenshot boundaries
+  if (screenshotMetadata && 
+      (x + width > screenshotMetadata.width || y + height > screenshotMetadata.height)) {
+    return {
+      valid: false,
+      error: `Area exceeds screenshot boundaries (${screenshotMetadata.width}x${screenshotMetadata.height})`
+    };
+  }
+  
+  // Check if area is too small (might not contain readable text)
+  if (width < 10 || height < 5) {
+    return {
+      valid: false,
+      error: `Area too small for OCR (minimum 10x5 pixels required)`
+    };
+  }
+  
+  // Check if area is unreasonably large
+  if (width > 1000 || height > 200) {
+    return {
+      valid: false,
+      error: `Area too large - might contain too much noise`
+    };
+  }
+  
+  return { valid: true };
+}
 
 // App-Konfiguration
 const isDev = process.env.NODE_ENV === 'development';
@@ -526,9 +628,15 @@ function createSpinDetectionWindow() {
   });
 }
 
-// Working area selection overlay
+// Working area selection overlay with better ESC handling
 function createAdvancedAreaSelectionOverlay(areaType) {
   const { width, height } = screen.getPrimaryDisplay().workAreaSize;
+  
+  // Close any existing area selection window first
+  if (areaSelectionWindow && !areaSelectionWindow.isDestroyed()) {
+    areaSelectionWindow.close();
+    areaSelectionWindow = null;
+  }
   
   areaSelectionWindow = new BrowserWindow({
     width: width,
@@ -542,9 +650,11 @@ function createAdvancedAreaSelectionOverlay(areaType) {
     skipTaskbar: true,
     webPreferences: {
       nodeIntegration: true,
-      contextIsolation: false
+      contextIsolation: false,
+      enableRemoteModule: true
     },
-    level: 'screen-saver'
+    level: 'screen-saver',
+    focusable: true
   });
   
   const areaNames = {
@@ -566,6 +676,8 @@ function createAdvancedAreaSelectionOverlay(areaType) {
               user-select: none;
               font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
               overflow: hidden;
+              height: 100vh;
+              width: 100vw;
           }
           .instructions {
               position: fixed;
@@ -581,6 +693,7 @@ function createAdvancedAreaSelectionOverlay(areaType) {
               z-index: 1000;
               box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
               text-align: center;
+              animation: fadeIn 0.5s ease-in;
           }
           .instructions small {
               display: block;
@@ -596,6 +709,7 @@ function createAdvancedAreaSelectionOverlay(areaType) {
               display: none;
               box-shadow: 0 0 20px rgba(0, 255, 65, 0.8);
               z-index: 999;
+              pointer-events: none;
           }
           .coordinates {
               position: fixed;
@@ -610,20 +724,48 @@ function createAdvancedAreaSelectionOverlay(areaType) {
               z-index: 1000;
               border: 2px solid #00ff41;
           }
+          .cancel-hint {
+              position: fixed;
+              top: 50%;
+              left: 20px;
+              background: rgba(239, 68, 68, 0.9);
+              color: white;
+              padding: 15px 20px;
+              border-radius: 10px;
+              font-size: 16px;
+              font-weight: bold;
+              z-index: 1000;
+              border: 2px solid #ef4444;
+              animation: pulse 2s infinite;
+          }
+          @keyframes fadeIn {
+              from { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+              to { opacity: 1; transform: translateX(-50%) translateY(0); }
+          }
+          @keyframes pulse {
+              0%, 100% { opacity: 1; }
+              50% { opacity: 0.7; }
+          }
       </style>
   </head>
   <body>
       <div class="instructions">
           ${areaNames[areaType]} auswählen<br>
           <small>🎯 Klicken und ziehen um den Textbereich zu markieren<br>
-          ⚡ ESC zum Abbrechen</small>
+          ⚡ ESC zum Abbrechen • Enter zum Bestätigen</small>
+      </div>
+      
+      <div class="cancel-hint">
+          ❌ ESC<br>
+          <small>Abbrechen</small>
       </div>
       
       <div class="selection-box" id="selectionBox"></div>
       
       <div class="coordinates" id="coordinates">
           Position: <span id="mousePos">0, 0</span><br>
-          Größe: <span id="selectionSize">0 × 0</span>
+          Größe: <span id="selectionSize">0 × 0</span><br>
+          <small>Status: <span id="status">Bereit</span></small>
       </div>
       
       <script>
@@ -631,10 +773,67 @@ function createAdvancedAreaSelectionOverlay(areaType) {
           
           let isSelecting = false;
           let startX, startY;
+          let selectionStarted = false;
           const selectionBox = document.getElementById('selectionBox');
           const mousePosEl = document.getElementById('mousePos');
           const selectionSizeEl = document.getElementById('selectionSize');
+          const statusEl = document.getElementById('status');
           
+          console.log('Area selection overlay loaded for: ${areaType}');
+          
+          // IMPROVED: Multiple ESC key handlers for reliability
+          let escapePressed = false;
+          
+          function handleEscape() {
+              if (escapePressed) return; // Prevent double execution
+              escapePressed = true;
+              console.log('ESC pressed - closing area selection');
+              statusEl.textContent = 'Abgebrochen';
+              
+              // Immediate visual feedback
+              document.body.style.background = 'rgba(255, 0, 0, 0.2)';
+              
+              setTimeout(() => {
+                  try {
+                      window.close();
+                  } catch (e) {
+                      console.error('Error closing window:', e);
+                      // Fallback: notify main process
+                      ipcRenderer.send('close-area-selection');
+                  }
+              }, 100);
+          }
+          
+          // Multiple event listeners for ESC key
+          document.addEventListener('keydown', (e) => {
+              console.log('Keydown event:', e.key, e.code, e.keyCode);
+              if (e.key === 'Escape' || e.code === 'Escape' || e.keyCode === 27) {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleEscape();
+                  return false;
+              }
+              
+              if (e.key === 'Enter' && selectionStarted) {
+                  e.preventDefault();
+                  completeSelection();
+              }
+          });
+          
+          // Also listen on window and body
+          window.addEventListener('keydown', (e) => {
+              if (e.key === 'Escape' || e.code === 'Escape' || e.keyCode === 27) {
+                  handleEscape();
+              }
+          });
+          
+          document.body.addEventListener('keydown', (e) => {
+              if (e.key === 'Escape' || e.code === 'Escape' || e.keyCode === 27) {
+                  handleEscape();
+              }
+          });
+          
+          // IMPROVED: Better mouse handling
           document.addEventListener('mousemove', (e) => {
               mousePosEl.textContent = e.clientX + ', ' + e.clientY;
               
@@ -648,11 +847,16 @@ function createAdvancedAreaSelectionOverlay(areaType) {
                   selectionBox.style.height = height + 'px';
                   
                   selectionSizeEl.textContent = width + ' × ' + height;
+                  statusEl.textContent = 'Auswahl aktiv';
               }
           });
           
           document.addEventListener('mousedown', (e) => {
+              if (escapePressed) return;
+              
+              console.log('Mouse down at:', e.clientX, e.clientY);
               isSelecting = true;
+              selectionStarted = true;
               startX = e.clientX;
               startY = e.clientY;
               
@@ -661,48 +865,105 @@ function createAdvancedAreaSelectionOverlay(areaType) {
               selectionBox.style.width = '0px';
               selectionBox.style.height = '0px';
               selectionBox.style.display = 'block';
+              
+              statusEl.textContent = 'Auswahl gestartet';
+              
+              e.preventDefault();
+              e.stopPropagation();
           });
           
           document.addEventListener('mouseup', (e) => {
-              if (!isSelecting) return;
+              if (!isSelecting || escapePressed) return;
               
-              const endX = e.clientX;
-              const endY = e.clientY;
+              completeSelection();
+          });
+          
+          function completeSelection() {
+              if (!selectionStarted || escapePressed) return;
+              
+              const endX = event.clientX || startX + 50;
+              const endY = event.clientY || startY + 50;
               
               const width = Math.abs(endX - startX);
               const height = Math.abs(endY - startY);
               
-              if (width < 20 || height < 10) {
-                  alert('⚠️ Bereich zu klein! Mindestens 20×10 Pixel erforderlich.');
-                  selectionBox.style.display = 'none';
-                  isSelecting = false;
+              console.log('Selection completed:', {startX, startY, endX, endY, width, height});
+              
+              // Enhanced validation with better user feedback
+              if (width < 10 || height < 5) {
+                  statusEl.textContent = 'Bereich zu klein!';
+                  alert('⚠️ Bereich zu klein für OCR!\\nMinimum: 10×5 Pixel\\nAktuell: ' + width + '×' + height + ' Pixel\\n\\nBitte wählen Sie einen größeren Bereich.');
+                  resetSelection();
                   return;
               }
               
+              if (width > 1000 || height > 200) {
+                  const proceed = confirm('⚠️ Sehr großer Bereich!\\nGröße: ' + width + '×' + height + ' Pixel\\n\\nGroße Bereiche können schlechte OCR-Ergebnisse liefern.\\nTrotzdem fortfahren?');
+                  if (!proceed) {
+                      resetSelection();
+                      return;
+                  }
+              }
+              
               const coordinates = {
-                  x: Math.min(startX, endX),
-                  y: Math.min(startY, endY),
-                  width: width,
-                  height: height
+                  x: Math.floor(Math.min(startX, endX)),
+                  y: Math.floor(Math.min(startY, endY)),
+                  width: Math.floor(width),
+                  height: Math.floor(height)
               };
               
-              console.log('Area selected:', coordinates);
-              ipcRenderer.invoke('save-selected-area', '${areaType}', coordinates);
-              window.close();
+              statusEl.textContent = 'Bereich gespeichert!';
+              document.body.style.background = 'rgba(0, 255, 0, 0.2)';
+              
+              console.log('Saving area:', coordinates);
+              
+              // Save the area and close
+              ipcRenderer.invoke('save-selected-area', '${areaType}', coordinates).then(() => {
+                  setTimeout(() => {
+                      window.close();
+                  }, 500);
+              }).catch(err => {
+                  console.error('Error saving area:', err);
+                  alert('Fehler beim Speichern: ' + err.message);
+              });
+          }
+          
+          function resetSelection() {
+              isSelecting = false;
+              selectionStarted = false;
+              selectionBox.style.display = 'none';
+              statusEl.textContent = 'Bereit';
+          }
+          
+          // Auto-focus for reliable key events
+          window.focus();
+          document.body.focus();
+          
+          // Additional focus handling
+          setTimeout(() => {
+              window.focus();
+              console.log('Window focused for key events');
+          }, 100);
+          
+          // Prevent context menu
+          document.addEventListener('contextmenu', (e) => {
+              e.preventDefault();
           });
           
-          document.addEventListener('keydown', (e) => {
-              if (e.key === 'Escape') {
-                  window.close();
-              }
-          });
-          
+          // Visual feedback on load
           setTimeout(() => {
               const instructions = document.querySelector('.instructions');
               if (instructions) {
-                  instructions.style.opacity = '0.7';
+                  instructions.style.opacity = '0.8';
               }
           }, 3000);
+          
+          // Heartbeat to ensure responsiveness
+          setInterval(() => {
+              if (!escapePressed) {
+                  console.log('Area selection overlay active');
+              }
+          }, 5000);
       </script>
   </body>
   </html>
@@ -710,10 +971,51 @@ function createAdvancedAreaSelectionOverlay(areaType) {
   
   areaSelectionWindow.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(areaSelectionHtml));
   areaSelectionWindow.show();
+  areaSelectionWindow.focus();
   
+  // IMPROVED: Better window event handling
   areaSelectionWindow.on('closed', () => {
+    console.log('Area selection window closed');
     areaSelectionWindow = null;
   });
+  
+  areaSelectionWindow.on('blur', () => {
+    // Re-focus after short delay to maintain key event handling
+    setTimeout(() => {
+      if (areaSelectionWindow && !areaSelectionWindow.isDestroyed()) {
+        areaSelectionWindow.focus();
+      }
+    }, 100);
+  });
+  
+  // IMPROVED: Global shortcut as backup for ESC
+  try {
+    // Unregister any existing ESC shortcut first
+    if (globalShortcut.isRegistered('Escape')) {
+      globalShortcut.unregister('Escape');
+    }
+    
+    const escapeRegistered = globalShortcut.register('Escape', () => {
+      if (areaSelectionWindow && !areaSelectionWindow.isDestroyed()) {
+        console.log('Global ESC pressed - closing area selection');
+        areaSelectionWindow.close();
+        if (globalShortcut.isRegistered('Escape')) {
+          globalShortcut.unregister('Escape');
+        }
+      }
+    });
+    
+    if (escapeRegistered) {
+      console.log('✅ Global ESC shortcut registered successfully');
+    } else {
+      console.log('⚠️ Global ESC shortcut registration failed (might be in use by another app)');
+    }
+  } catch (escError) {
+    console.warn('⚠️ Global ESC shortcut error:', escError.message);
+    // Continue without global shortcut - local ESC handlers should still work
+  }
+  
+  console.log(`Area selection overlay created for ${areaType}`);
 }
 
 function createTray() {
@@ -1068,6 +1370,24 @@ ipcMain.handle('start-area-selection', (event, areaType) => {
   return { success: true };
 });
 
+// Add IPC handler for closing area selection
+ipcMain.on('close-area-selection', () => {
+  console.log('Force closing area selection via IPC');
+  if (areaSelectionWindow && !areaSelectionWindow.isDestroyed()) {
+    areaSelectionWindow.close();
+  }
+  
+  // Clean up global shortcut
+  try {
+    if (globalShortcut.isRegistered('Escape')) {
+      globalShortcut.unregister('Escape');
+      console.log('🧽 Force close: Global ESC shortcut cleaned up');
+    }
+  } catch (cleanupError) {
+    console.warn('⚠️ Force close ESC cleanup warning:', cleanupError.message);
+  }
+});
+
 ipcMain.handle('save-selected-area', async (event, areaType, coordinates) => {
   console.log('💾 Saving area:', areaType, coordinates);
   
@@ -1079,6 +1399,16 @@ ipcMain.handle('save-selected-area', async (event, areaType, coordinates) => {
   
   if (spinDetectionWindow && !spinDetectionWindow.isDestroyed()) {
     spinDetectionWindow.webContents.send('area-configured', areaType, coordinates);
+  }
+  
+  // Clean up global shortcut if area selection is complete
+  try {
+    if (globalShortcut.isRegistered('Escape')) {
+      globalShortcut.unregister('Escape');
+      console.log('🧽 Global ESC shortcut cleaned up after area save');
+    }
+  } catch (cleanupError) {
+    console.warn('⚠️ ESC shortcut cleanup warning:', cleanupError.message);
   }
   
   return { success: true };
@@ -1128,6 +1458,12 @@ ipcMain.handle('test-spin-detection', async (event, config) => {
     }
     
     const screenshot = sources[0].thumbnail;
+    const screenshotBuffer = screenshot.toPNG();
+    
+    // Get screenshot dimensions for validation
+    const sharp = require('sharp');
+    const screenshotMetadata = await sharp(screenshotBuffer).metadata();
+    console.log(`📷 Screenshot dimensions: ${screenshotMetadata.width}x${screenshotMetadata.height}`);
     
     let results = {
       success: true,
@@ -1135,7 +1471,11 @@ ipcMain.handle('test-spin-detection', async (event, config) => {
       win: '0.00',
       balance: '0.00',
       message: 'REAL OCR analysis with Tesseract.js',
-      areasAnalyzed: []
+      areasAnalyzed: [],
+      screenshotInfo: {
+        width: screenshotMetadata.width,
+        height: screenshotMetadata.height
+      }
     };
     
     // REAL OCR ANALYSIS: Analyze actual configured areas with OCR Engine
@@ -1151,17 +1491,41 @@ ipcMain.handle('test-spin-detection', async (event, config) => {
         console.log('✅ Test OCR Engine initialized');
       } catch (error) {
         console.warn('⚠️ OCR Engine initialization warning for test:', error.message);
+        return {
+          success: false,
+          error: `OCR Engine initialization failed: ${error.message}`,
+          screenshotInfo: results.screenshotInfo
+        };
       }
       
-      // Process each configured area with REAL OCR
+      // Validate and process each configured area with REAL OCR
       for (const [areaType, area] of Object.entries(config.areas)) {
         if (area) {
           console.log(`📊 REAL OCR analyzing ${areaType} area:`, area);
           
+          // Validate area before processing
+          const areaValidation = validateAreaForOCR(area, areaType, screenshotMetadata);
+          
+          if (!areaValidation.valid) {
+            console.warn(`❌ Area validation failed for ${areaType}:`, areaValidation.error);
+            results.areasAnalyzed.push({
+              type: areaType,
+              value: '0.00',
+              confidence: 0,
+              text: 'VALIDATION_ERROR',
+              area: area,
+              error: areaValidation.error,
+              method: 'REAL_OCR_TESSERACT',
+              areaInfo: `${area.width}x${area.height}px @ (${area.x}, ${area.y})`,
+              analysisNotes: 'Area coordinates are invalid'
+            });
+            continue;
+          }
+          
           try {
             // Use the REAL OCR Engine
             const ocrResult = await testOCREngine.analyzeAreaWithOCR(
-              screenshot.toPNG(), 
+              screenshotBuffer, 
               area, 
               areaType
             );
@@ -1172,8 +1536,11 @@ ipcMain.handle('test-spin-detection', async (event, config) => {
               value: ocrResult.value.toString(),
               confidence: ocrResult.confidence,
               text: ocrResult.text,
-              area: area,
-              method: 'REAL_OCR_TESSERACT'
+              area: ocrResult.area || area,
+              method: 'REAL_OCR_TESSERACT',
+              areaInfo: `${area.width}x${area.height}px @ (${area.x}, ${area.y})`,
+              analysisNotes: ocrResult.confidence > 70 ? 'High confidence detection' : 
+                           ocrResult.confidence > 30 ? 'Medium confidence detection' : 'Low confidence - may need area adjustment'
             });
             
             console.log(`✅ REAL OCR ${areaType}: "${ocrResult.text}" -> ${ocrResult.value} (${ocrResult.confidence}% confidence)`);
@@ -1186,11 +1553,22 @@ ipcMain.handle('test-spin-detection', async (event, config) => {
               text: 'OCR_ERROR',
               area: area,
               error: ocrError.message,
-              method: 'REAL_OCR_TESSERACT'
+              method: 'REAL_OCR_TESSERACT',
+              areaInfo: `${area.width}x${area.height}px @ (${area.x}, ${area.y})`,
+              analysisNotes: ocrError.message.includes('extract_area') ? 'Invalid area coordinates' : 'OCR processing failed'
             });
           }
         }
       }
+      
+      // Cleanup OCR engine after testing
+      try {
+        await testOCREngine.terminate();
+        console.log('🧽 Test OCR Engine cleaned up');
+      } catch (cleanupError) {
+        console.warn('OCR cleanup warning:', cleanupError.message);
+      }
+      
     } else {
       results.message = 'No OCR areas configured - configure areas first!';
       console.log('⚠️ No areas configured for REAL OCR analysis');
