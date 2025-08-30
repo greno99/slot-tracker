@@ -28,6 +28,7 @@ class FixedSpinDetection {
         document.getElementById('setBalanceAreaBtn').addEventListener('click', () => this.startAreaSetup('balance'));
         document.getElementById('testDetectionBtn').addEventListener('click', () => this.testDetection());
         document.getElementById('takeScreenshotBtn').addEventListener('click', () => this.takeScreenshot());
+        document.getElementById('testOCREngineBtn').addEventListener('click', () => this.testOCREngine());
         document.getElementById('startDetectionBtn').addEventListener('click', () => this.startDetection());
         document.getElementById('stopDetectionBtn').addEventListener('click', () => this.stopDetection());
         document.getElementById('closeBtn').addEventListener('click', () => window.close());
@@ -399,6 +400,50 @@ class FixedSpinDetection {
 
         ipcRenderer.invoke('stop-spin-detection');
         this.log('✅ Detection Engine gestoppt', 'success');
+    }
+
+    async testOCREngine() {
+        this.log('🧪 Testing OCR Engine directly...', 'info');
+        
+        try {
+            const result = await ipcRenderer.invoke('test-ocr-engine');
+            
+            if (result.success) {
+                this.log(`✅ OCR Engine Test SUCCESS!`, 'success');
+                this.log(`📝 Recognized text: "${result.text}"`, 'success');
+                this.log(`🎯 Confidence: ${result.confidence.toFixed(1)}%`, 'success');
+                
+                const preview = document.getElementById('preview');
+                preview.innerHTML = `
+                    <div class="success-box">
+                        <h4 style="color: #10b981; margin-bottom: 15px;">🧪 OCR Engine Test Results</h4>
+                        <div style="text-align: center; margin: 20px 0;">
+                            <div style="font-size: 1.5em; margin: 10px 0;">📝</div>
+                            <div style="font-size: 1.3em; font-weight: bold; color: #10b981;">"${result.text}"</div>
+                            <div style="font-size: 0.9em; opacity: 0.8; margin-top: 8px;">Confidence: ${result.confidence.toFixed(1)}%</div>
+                        </div>
+                        <div style="font-size: 0.9em; color: #10b981; text-align: center; margin-top: 15px;">
+                            ✅ OCR Engine is working correctly!
+                        </div>
+                    </div>
+                `;
+            } else {
+                this.log(`❌ OCR Engine Test FAILED: ${result.error}`, 'error');
+                
+                const preview = document.getElementById('preview');
+                preview.innerHTML = `
+                    <div class="error-box">
+                        <h4 style="color: #ef4444;">❌ OCR Engine Test Failed</h4>
+                        <p style="color: #ef4444; margin: 15px 0;">${result.error}</p>
+                        <div style="font-size: 0.9em; color: #9ca3af; margin-top: 15px;">
+                            This might indicate missing dependencies or configuration issues.
+                        </div>
+                    </div>
+                `;
+            }
+        } catch (error) {
+            this.log(`❌ OCR Engine Test ERROR: ${error.message}`, 'error');
+        }
     }
 
     log(message, type = 'info') {

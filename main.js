@@ -93,53 +93,36 @@ class CasinoDetectionEngine {
     startWindowsMouseTracking() {
         const { spawn } = require('child_process');
         
-        // SUPER FIXED: Ultra-responsive PowerShell mouse tracking with Win32 API
+        // FIXED: Simplified PowerShell mouse tracking without problematic Add-Type
         const mouseScript = `
-Add-Type -TypeDefinition @'
-using System;
-using System.Runtime.InteropServices;
-using System.Windows.Forms;
-
-public static class FastMouseHook {
-    [DllImport("user32.dll")]
-    public static extern bool GetCursorPos(out POINT lpPoint);
-    
-    [DllImport("user32.dll")]
-    public static extern short GetAsyncKeyState(int vKey);
-    
-    public struct POINT {
-        public int X;
-        public int Y;
-    }
-}
-'@
+Add-Type -AssemblyName System.Windows.Forms
 
 $lastClickTime = 0
 $lastPosition = @{X=-1; Y=-1}
 
 while ($true) {
-    $pos = New-Object FastMouseHook+POINT
-    [FastMouseHook]::GetCursorPos([ref]$pos)
+    # Use .NET Framework methods directly
+    $pos = [System.Windows.Forms.Cursor]::Position
     
-    # Ultra-fast left mouse button detection
-    $leftButton = [FastMouseHook]::GetAsyncKeyState(0x01)
+    # Check left mouse button state
+    $leftButton = [System.Windows.Forms.Control]::MouseButtons
     
-    if ($leftButton -band 0x8000) {
+    if ($leftButton -eq "Left") {
         $currentTime = [System.DateTime]::Now.Ticks / 10000000
         
-        # Smart debouncing (300ms min, but allow position changes)
-        if ($currentTime - $lastClickTime -gt 0.3) {
+        # Smart debouncing (500ms min for clicks)
+        if ($currentTime - $lastClickTime -gt 0.5) {
             # Position changed or enough time passed
-            if (($pos.X -ne $lastPosition.X) -or ($pos.Y -ne $lastPosition.Y) -or ($currentTime - $lastClickTime -gt 1.2)) {
+            if (($pos.X -ne $lastPosition.X) -or ($pos.Y -ne $lastPosition.Y) -or ($currentTime - $lastClickTime -gt 1.0)) {
                 Write-Host "FAST_CLICK:$($pos.X):$($pos.Y)"
                 $lastClickTime = $currentTime
                 $lastPosition = @{X=$pos.X; Y=$pos.Y}
-                Start-Sleep -Milliseconds 250  # Brief pause after successful click
+                Start-Sleep -Milliseconds 300  # Brief pause after successful click
             }
         }
     }
     
-    Start-Sleep -Milliseconds 30  # FASTER polling (30ms instead of 100ms)
+    Start-Sleep -Milliseconds 50  # Reasonable polling interval
 }
         `;
 
@@ -951,6 +934,23 @@ ipcMain.handle('open-spin-detection', () => {
 
 // Real global mouse tracking for setup
 let setupMouseListener = null;
+
+// OCR Test handler
+ipcMain.handle('test-ocr-engine', async () => {
+    try {
+        console.log('🧪 Testing OCR Engine directly...');
+        const testOCREngine = new OCREngine();
+        const result = await testOCREngine.testOCR();
+        await testOCREngine.terminate();
+        return result;
+    } catch (error) {
+        console.error('OCR Engine test failed:', error);
+        return {
+            success: false,
+            error: error.message
+        };
+    }
+});
 
 ipcMain.handle('start-setup-mouse-tracking', () => {
   console.log('🖱️ Starting SETUP global mouse tracking...');
