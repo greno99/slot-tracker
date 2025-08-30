@@ -282,6 +282,77 @@ Write-Host "SUCCESS:${tempPath.replace(/\\/g, '\\\\')}"
     async terminate() {
         console.log('🔚 Quick Fix OCR terminated');
     }
+
+    // COMPATIBILITY METHOD: analyzeScreenArea (required by main.js)
+    async analyzeScreenArea(area, areaType) {
+        console.log(`🎯 analyzeScreenArea called for ${areaType}`);
+        
+        try {
+            // Take a fresh screenshot
+            const screenshot = await this.takeWorkingScreenshot();
+            
+            // Use our existing OCR analysis method
+            const result = await this.analyzeAreaWithOCR(screenshot, area, areaType);
+            
+            // Return in the expected format
+            return {
+                value: result.value,
+                text: result.text,
+                confidence: result.confidence,
+                area: result.area,
+                method: result.method || 'QUICK_FIX_OCR',
+                error: result.error || null
+            };
+            
+        } catch (error) {
+            console.error(`❌ analyzeScreenArea failed for ${areaType}:`, error);
+            
+            // Return fallback result in expected format
+            const fallbackValues = {
+                bet: 1.00,
+                win: 0,
+                balance: 100.00
+            };
+            
+            return {
+                value: fallbackValues[areaType] || 0,
+                text: 'ERROR',
+                confidence: 0,
+                area: area,
+                method: 'FALLBACK',
+                error: error.message
+            };
+        }
+    }
+
+    // Test OCR method (required by main.js)
+    async testOCR() {
+        console.log('🧪 Running OCR test...');
+        
+        try {
+            // Take a test screenshot
+            const screenshot = await this.takeWorkingScreenshot();
+            
+            if (!screenshot || screenshot.length < 1000) {
+                throw new Error('Screenshot too small or empty');
+            }
+            
+            console.log(`✅ Test screenshot: ${screenshot.length} bytes`);
+            
+            return {
+                success: true,
+                message: 'OCR engine test successful',
+                screenshotSize: screenshot.length
+            };
+            
+        } catch (error) {
+            console.error('❌ OCR test failed:', error);
+            return {
+                success: false,
+                error: error.message
+            };
+        }
+    }
 }
 
 module.exports = QuickFixOCR;

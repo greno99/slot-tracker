@@ -4,7 +4,8 @@ const Store = require('electron-store');
 const path = require('path');
 const fs = require('fs');
 const xlsx = require('node-xlsx');
-const OCREngine = require('./quick-fix-ocr'); // QUICK FIX OCR Engine - WORKING VERSION
+const OCREngine = require('./enhanced-screenshot-ocr'); // ENHANCED Screenshot OCR Engine - Multi-method with fallbacks
+// const OCREngine = require('./quick-fix-ocr'); // QUICK FIX OCR Engine - WORKING VERSION
 // const OCREngine = require('./ocr-engine'); // Original OCR Engine (has issues)
 
 const store = new Store();

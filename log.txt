@@ -1,71 +1,197 @@
 ­ƒöì Running ENHANCED OCR on configured areas...
-Ô£à Quick Fix OCR initialized
+­ƒÜÇ Initializing Enhanced Screenshot OCR...
+­ƒº¬ Running comprehensive enhanced OCR test...
+Testing Electron desktopCapturer method...
+­ƒô© Trying Electron desktopCapturer...
+[48664:0830/233932.248:ERROR:dxgi_output_duplicator.cc(116)] IDXGIDuplicateOutput does not use RGBA (8 bit) format, which is required by downstream components, format is 10
+[48664:0830/233932.379:ERROR:dxgi_output_duplicator.cc(116)] IDXGIDuplicateOutput does not use RGBA (8 bit) format, which is required by downstream components, format is 10
+[48664:0830/233932.548:ERROR:dxgi_output_duplicator.cc(116)] IDXGIDuplicateOutput does not use RGBA (8 bit) format, which is required by downstream components, format is 10
+Ô£à Electron screenshot: 933502 bytes
+Testing enhanced PowerShell method...
+­ƒô© Trying enhanced PowerShell screenshot...
+PowerShell output: 
+ÔØî Enhanced PowerShell screenshot error: PowerShell failed - Output: 
+Enhanced PowerShell method failed: PowerShell screenshot failed: PowerShell failed - Output:
+Testing Python PIL method...
+­ƒô© Trying Python PIL screenshot...
+Python output: 
+Python method failed: Python screenshot failed: Python failed: 
+Ô£à Enhanced OCR test successful! 1/3 methods working
+­ƒÅå Best method: Electron (933502 bytes)
+Ô£à Enhanced Screenshot OCR initialized successfully!
+­ƒÅå Primary method: Electron
+­ƒôè Working methods: 1/3
 Ô£à Test ENHANCED OCR Engine initialized
-­ƒôè ENHANCED OCR analyzing bet area: { x: 1412, y: 1029, width: 11, height: 20 }
-ENHANCED OCR error for bet: TypeError: testOCREngine.analyzeScreenArea is not a function
-    at C:\Users\Joshua\OneDrive\Dokumente\programming\slot-tracker\main.js:1512:51
-    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+­ƒôè ENHANCED OCR analyzing bet area: { x: 1355, y: 1078, width: 99, height: 44 }
+­ƒÄ» Enhanced analyzeScreenArea for bet
+­ƒô© Enhanced screenshot capture with multiple methods...
+­ƒÜÇ Trying last successful method: Electron
+­ƒô© Trying Electron desktopCapturer...
+[48664:0830/233933.213:ERROR:dxgi_output_duplicator.cc(116)] IDXGIDuplicateOutput does not use RGBA (8 bit) format, which is required by downstream components, format is 10
+[48664:0830/233933.346:ERROR:dxgi_output_duplicator.cc(116)] IDXGIDuplicateOutput does not use RGBA (8 bit) format, which is required by downstream components, format is 10
+[48664:0830/233933.507:ERROR:dxgi_output_duplicator.cc(116)] IDXGIDuplicateOutput does not use RGBA (8 bit) format, which is required by downstream components, format is 10
+Ô£à Electron screenshot: 935752 bytes
+Ô£à Electron method worked again
+­ƒô© Screenshot captured: 935752 bytes via Electron
+­ƒÄ» Enhanced OCR analysis for bet...
+­ƒöì Advanced analysis for bet...
+­ƒöì Extracting bet area with enhanced validation...
+­ƒôÀ Full screenshot: 1920x1080
+­ƒôÉ Requested area: 1355,1078 99x44
+Ô£à Safe extraction area: 1355,1070 99x15
+ÔØî Enhanced area extraction failed for bet: Error: extract_area: bad extract area
+    at Sharp.toBuffer (C:\Users\Joshua\OneDrive\Dokumente\programming\slot-tracker\node_modules\sharp\lib\output.js:163:17)
+    at EnhancedScreenshotOCR.extractAreaProperly (C:\Users\Joshua\OneDrive\Dokumente\programming\slot-tracker\enhanced-screenshot-ocr.js:271:18)
+    at async EnhancedScreenshotOCR.analyzeAreaAdvanced (C:\Users\Joshua\OneDrive\Dokumente\programming\slot-tracker\enhanced-screenshot-ocr.js:302:31)
+    at async EnhancedScreenshotOCR.analyzeAreaWithOCR (C:\Users\Joshua\OneDrive\Dokumente\programming\slot-tracker\enhanced-screenshot-ocr.js:436:28)
+    at async EnhancedScreenshotOCR.analyzeScreenArea (C:\Users\Joshua\OneDrive\Dokumente\programming\slot-tracker\enhanced-screenshot-ocr.js:481:28)
+    at async C:\Users\Joshua\OneDrive\Dokumente\programming\slot-tracker\main.js:1513:31
     at async WebContents.<anonymous> (node:electron/js2c/browser_init:2:79665)
-­ƒôè ENHANCED OCR analyzing win area: { x: 967, y: 1079, width: 108, height: 47 }
-ENHANCED OCR error for win: TypeError: testOCREngine.analyzeScreenArea is not a function
-    at C:\Users\Joshua\OneDrive\Dokumente\programming\slot-tracker\main.js:1512:51
-    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+ÔØî Advanced analysis failed for bet: Error: extract_area: bad extract area
+    at Sharp.toBuffer (C:\Users\Joshua\OneDrive\Dokumente\programming\slot-tracker\node_modules\sharp\lib\output.js:163:17)
+    at EnhancedScreenshotOCR.extractAreaProperly (C:\Users\Joshua\OneDrive\Dokumente\programming\slot-tracker\enhanced-screenshot-ocr.js:271:18)
+    at async EnhancedScreenshotOCR.analyzeAreaAdvanced (C:\Users\Joshua\OneDrive\Dokumente\programming\slot-tracker\enhanced-screenshot-ocr.js:302:31)
+    at async EnhancedScreenshotOCR.analyzeAreaWithOCR (C:\Users\Joshua\OneDrive\Dokumente\programming\slot-tracker\enhanced-screenshot-ocr.js:436:28)
+    at async EnhancedScreenshotOCR.analyzeScreenArea (C:\Users\Joshua\OneDrive\Dokumente\programming\slot-tracker\enhanced-screenshot-ocr.js:481:28)
+    at async C:\Users\Joshua\OneDrive\Dokumente\programming\slot-tracker\main.js:1513:31
     at async WebContents.<anonymous> (node:electron/js2c/browser_init:2:79665)
-­ƒôè ENHANCED OCR analyzing balance area: { x: 556, y: 1075, width: 117, height: 51 }
-ENHANCED OCR error for balance: TypeError: testOCREngine.analyzeScreenArea is not a function
-    at C:\Users\Joshua\OneDrive\Dokumente\programming\slot-tracker\main.js:1512:51
-    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+Ô£à Enhanced OCR result for bet: {
+  value: 0,
+  confidence: 0,
+  method: 'ENHANCED_OCR_ANALYSIS_FAILED',
+  captureMethod: 'Electron'
+}
+Ô£à ENHANCED OCR bet: "ERROR" -> 0 (0% confidence via UNKNOWN)
+­ƒôè ENHANCED OCR analyzing win area: { x: 962, y: 1078, width: 112, height: 48 }
+­ƒÄ» Enhanced analyzeScreenArea for win
+­ƒô© Enhanced screenshot capture with multiple methods...
+­ƒÜÇ Trying last successful method: Electron
+­ƒô© Trying Electron desktopCapturer...
+[48664:0830/233934.265:ERROR:dxgi_output_duplicator.cc(116)] IDXGIDuplicateOutput does not use RGBA (8 bit) format, which is required by downstream components, format is 10
+[48664:0830/233934.389:ERROR:dxgi_output_duplicator.cc(116)] IDXGIDuplicateOutput does not use RGBA (8 bit) format, which is required by downstream components, format is 10
+[48664:0830/233934.537:ERROR:dxgi_output_duplicator.cc(116)] IDXGIDuplicateOutput does not use RGBA (8 bit) format, which is required by downstream components, format is 10
+Ô£à Electron screenshot: 932801 bytes
+Ô£à Electron method worked again
+­ƒô© Screenshot captured: 932801 bytes via Electron
+­ƒÄ» Enhanced OCR analysis for win...
+­ƒöì Advanced analysis for win...
+­ƒöì Extracting win area with enhanced validation...
+­ƒôÀ Full screenshot: 1920x1080
+­ƒôÉ Requested area: 962,1078 112x48
+Ô£à Safe extraction area: 962,1070 112x15
+ÔØî Enhanced area extraction failed for win: Error: extract_area: bad extract area
+    at Sharp.toBuffer (C:\Users\Joshua\OneDrive\Dokumente\programming\slot-tracker\node_modules\sharp\lib\output.js:163:17)
+    at EnhancedScreenshotOCR.extractAreaProperly (C:\Users\Joshua\OneDrive\Dokumente\programming\slot-tracker\enhanced-screenshot-ocr.js:271:18)
+    at async EnhancedScreenshotOCR.analyzeAreaAdvanced (C:\Users\Joshua\OneDrive\Dokumente\programming\slot-tracker\enhanced-screenshot-ocr.js:302:31)
+    at async EnhancedScreenshotOCR.analyzeAreaWithOCR (C:\Users\Joshua\OneDrive\Dokumente\programming\slot-tracker\enhanced-screenshot-ocr.js:436:28)
+    at async EnhancedScreenshotOCR.analyzeScreenArea (C:\Users\Joshua\OneDrive\Dokumente\programming\slot-tracker\enhanced-screenshot-ocr.js:481:28)
+    at async C:\Users\Joshua\OneDrive\Dokumente\programming\slot-tracker\main.js:1513:31
     at async WebContents.<anonymous> (node:electron/js2c/browser_init:2:79665)
-­ƒöÜ Quick Fix OCR terminated
+ÔØî Advanced analysis failed for win: Error: extract_area: bad extract area
+    at Sharp.toBuffer (C:\Users\Joshua\OneDrive\Dokumente\programming\slot-tracker\node_modules\sharp\lib\output.js:163:17)
+    at EnhancedScreenshotOCR.extractAreaProperly (C:\Users\Joshua\OneDrive\Dokumente\programming\slot-tracker\enhanced-screenshot-ocr.js:271:18)
+    at async EnhancedScreenshotOCR.analyzeAreaAdvanced (C:\Users\Joshua\OneDrive\Dokumente\programming\slot-tracker\enhanced-screenshot-ocr.js:302:31)
+    at async EnhancedScreenshotOCR.analyzeAreaWithOCR (C:\Users\Joshua\OneDrive\Dokumente\programming\slot-tracker\enhanced-screenshot-ocr.js:436:28)
+    at async EnhancedScreenshotOCR.analyzeScreenArea (C:\Users\Joshua\OneDrive\Dokumente\programming\slot-tracker\enhanced-screenshot-ocr.js:481:28)
+    at async C:\Users\Joshua\OneDrive\Dokumente\programming\slot-tracker\main.js:1513:31
+    at async WebContents.<anonymous> (node:electron/js2c/browser_init:2:79665)
+Ô£à Enhanced OCR result for win: {
+  value: 0,
+  confidence: 0,
+  method: 'ENHANCED_OCR_ANALYSIS_FAILED',
+  captureMethod: 'Electron'
+}
+Ô£à ENHANCED OCR win: "ERROR" -> 0 (0% confidence via UNKNOWN)
+­ƒôè ENHANCED OCR analyzing balance area: { x: 547, y: 1075, width: 126, height: 46 }
+­ƒÄ» Enhanced analyzeScreenArea for balance
+­ƒô© Enhanced screenshot capture with multiple methods...
+­ƒÜÇ Trying last successful method: Electron
+­ƒô© Trying Electron desktopCapturer...
+[48664:0830/233934.831:ERROR:dxgi_output_duplicator.cc(116)] IDXGIDuplicateOutput does not use RGBA (8 bit) format, which is required by downstream components, format is 10
+[48664:0830/233934.958:ERROR:dxgi_output_duplicator.cc(116)] IDXGIDuplicateOutput does not use RGBA (8 bit) format, which is required by downstream components, format is 10
+[48664:0830/233935.102:ERROR:dxgi_output_duplicator.cc(116)] IDXGIDuplicateOutput does not use RGBA (8 bit) format, which is required by downstream components, format is 10
+Ô£à Electron screenshot: 933344 bytes
+Ô£à Electron method worked again
+­ƒô© Screenshot captured: 933344 bytes via Electron
+­ƒÄ» Enhanced OCR analysis for balance...
+­ƒöì Advanced analysis for balance...
+­ƒöì Extracting balance area with enhanced validation...
+­ƒôÀ Full screenshot: 1920x1080
+­ƒôÉ Requested area: 547,1075 126x46
+Ô£à Safe extraction area: 547,1070 126x15
+ÔØî Enhanced area extraction failed for balance: Error: extract_area: bad extract area
+    at Sharp.toBuffer (C:\Users\Joshua\OneDrive\Dokumente\programming\slot-tracker\node_modules\sharp\lib\output.js:163:17)
+    at EnhancedScreenshotOCR.extractAreaProperly (C:\Users\Joshua\OneDrive\Dokumente\programming\slot-tracker\enhanced-screenshot-ocr.js:271:18)
+    at async EnhancedScreenshotOCR.analyzeAreaAdvanced (C:\Users\Joshua\OneDrive\Dokumente\programming\slot-tracker\enhanced-screenshot-ocr.js:302:31)
+    at async EnhancedScreenshotOCR.analyzeAreaWithOCR (C:\Users\Joshua\OneDrive\Dokumente\programming\slot-tracker\enhanced-screenshot-ocr.js:436:28)
+    at async EnhancedScreenshotOCR.analyzeScreenArea (C:\Users\Joshua\OneDrive\Dokumente\programming\slot-tracker\enhanced-screenshot-ocr.js:481:28)
+    at async C:\Users\Joshua\OneDrive\Dokumente\programming\slot-tracker\main.js:1513:31
+    at async WebContents.<anonymous> (node:electron/js2c/browser_init:2:79665)
+ÔØî Advanced analysis failed for balance: Error: extract_area: bad extract area
+    at Sharp.toBuffer (C:\Users\Joshua\OneDrive\Dokumente\programming\slot-tracker\node_modules\sharp\lib\output.js:163:17)
+    at EnhancedScreenshotOCR.extractAreaProperly (C:\Users\Joshua\OneDrive\Dokumente\programming\slot-tracker\enhanced-screenshot-ocr.js:271:18)
+    at async EnhancedScreenshotOCR.analyzeAreaAdvanced (C:\Users\Joshua\OneDrive\Dokumente\programming\slot-tracker\enhanced-screenshot-ocr.js:302:31)
+    at async EnhancedScreenshotOCR.analyzeAreaWithOCR (C:\Users\Joshua\OneDrive\Dokumente\programming\slot-tracker\enhanced-screenshot-ocr.js:436:28)
+    at async EnhancedScreenshotOCR.analyzeScreenArea (C:\Users\Joshua\OneDrive\Dokumente\programming\slot-tracker\enhanced-screenshot-ocr.js:481:28)
+    at async C:\Users\Joshua\OneDrive\Dokumente\programming\slot-tracker\main.js:1513:31
+    at async WebContents.<anonymous> (node:electron/js2c/browser_init:2:79665)
+Ô£à Enhanced OCR result for balance: {
+  value: 0,
+  confidence: 0,
+  method: 'ENHANCED_OCR_ANALYSIS_FAILED',
+  captureMethod: 'Electron'
+}
+Ô£à ENHANCED OCR balance: "ERROR" -> 0 (0% confidence via UNKNOWN)
+­ƒöÜ Enhanced Screenshot OCR terminated
 ­ƒº¢ Test ENHANCED OCR Engine cleaned up
-­ƒôè ENHANCED OCR Summary: 0/3 areas successful (0.0%)
-­ƒöº Capture methods used:
+­ƒôè ENHANCED OCR Summary: 3/3 areas successful (100.0%)
+­ƒöº Capture methods used: UNKNOWN
 Ô£à ENHANCED OCR Test results: {
   success: true,
-  bet: '0.00',
-  win: '0.00',
-  balance: '0.00',
+  bet: '0',
+  win: '0',
+  balance: '0',
   message: 'Analyzing 3 configured screen areas with ENHANCED OCR',
   areasAnalyzed: [
     {
       type: 'bet',
-      value: '0.00',
+      value: '0',
       confidence: 0,
-      text: 'OCR_ERROR',
+      text: 'ERROR',
       area: [Object],
-      error: 'testOCREngine.analyzeScreenArea is not a function',
-      method: 'ENHANCED_OCR_FAILED',
-      areaInfo: '11x20px @ (1412, 1029)',
-      analysisNotes: 'OCR processing failed'
+      method: 'ENHANCED_OCR_UNKNOWN',
+      areaInfo: '99x44px @ (1355, 1078)',
+      analysisNotes: 'Low confidence via UNKNOWN - may need area adjustment',
+      captureMethod: 'UNKNOWN'
     },
     {
       type: 'win',
-      value: '0.00',
+      value: '0',
       confidence: 0,
-      text: 'OCR_ERROR',
+      text: 'ERROR',
       area: [Object],
-      error: 'testOCREngine.analyzeScreenArea is not a function',
-      method: 'ENHANCED_OCR_FAILED',
-      areaInfo: '108x47px @ (967, 1079)',
-      analysisNotes: 'OCR processing failed'
+      method: 'ENHANCED_OCR_UNKNOWN',
+      areaInfo: '112x48px @ (962, 1078)',
+      analysisNotes: 'Low confidence via UNKNOWN - may need area adjustment',
+      captureMethod: 'UNKNOWN'
     },
     {
       type: 'balance',
-      value: '0.00',
+      value: '0',
       confidence: 0,
-      text: 'OCR_ERROR',
+      text: 'ERROR',
       area: [Object],
-      error: 'testOCREngine.analyzeScreenArea is not a function',
-      method: 'ENHANCED_OCR_FAILED',
-      areaInfo: '117x51px @ (556, 1075)',
-      analysisNotes: 'OCR processing failed'
+      method: 'ENHANCED_OCR_UNKNOWN',
+      areaInfo: '126x46px @ (547, 1075)',
+      analysisNotes: 'Low confidence via UNKNOWN - may need area adjustment',
+      captureMethod: 'UNKNOWN'
     }
   ],
   screenshotInfo: {},
   summary: {
-    successfulCaptures: 0,
+    successfulCaptures: 3,
     totalAreas: 3,
-    successRate: '0.0%',
-    captureMethods: []
+    successRate: '100.0%',
+    captureMethods: [ 'UNKNOWN' ]
   }
 }
