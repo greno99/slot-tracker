@@ -3,10 +3,10 @@
 ­ƒº¬ Running comprehensive enhanced OCR test...
 Testing Electron desktopCapturer method...
 ­ƒô© Trying Electron desktopCapturer...
-[48664:0830/233932.248:ERROR:dxgi_output_duplicator.cc(116)] IDXGIDuplicateOutput does not use RGBA (8 bit) format, which is required by downstream components, format is 10
-[48664:0830/233932.379:ERROR:dxgi_output_duplicator.cc(116)] IDXGIDuplicateOutput does not use RGBA (8 bit) format, which is required by downstream components, format is 10
-[48664:0830/233932.548:ERROR:dxgi_output_duplicator.cc(116)] IDXGIDuplicateOutput does not use RGBA (8 bit) format, which is required by downstream components, format is 10
-Ô£à Electron screenshot: 933502 bytes
+[31672:0830/234633.622:ERROR:dxgi_output_duplicator.cc(116)] IDXGIDuplicateOutput does not use RGBA (8 bit) format, which is required by downstream components, format is 10
+[31672:0830/234633.752:ERROR:dxgi_output_duplicator.cc(116)] IDXGIDuplicateOutput does not use RGBA (8 bit) format, which is required by downstream components, format is 10
+[31672:0830/234633.900:ERROR:dxgi_output_duplicator.cc(116)] IDXGIDuplicateOutput does not use RGBA (8 bit) format, which is required by downstream components, format is 10
+Ô£à Electron screenshot: 932596 bytes
 Testing enhanced PowerShell method...
 ­ƒô© Trying enhanced PowerShell screenshot...
 PowerShell output: 
@@ -17,131 +17,94 @@ Testing Python PIL method...
 Python output: 
 Python method failed: Python screenshot failed: Python failed: 
 Ô£à Enhanced OCR test successful! 1/3 methods working
-­ƒÅå Best method: Electron (933502 bytes)
+­ƒÅå Best method: Electron (932596 bytes)
 Ô£à Enhanced Screenshot OCR initialized successfully!
 ­ƒÅå Primary method: Electron
 ­ƒôè Working methods: 1/3
 Ô£à Test ENHANCED OCR Engine initialized
-­ƒôè ENHANCED OCR analyzing bet area: { x: 1355, y: 1078, width: 99, height: 44 }
+­ƒôè ENHANCED OCR analyzing bet area: { x: 1356, y: 1079, width: 98, height: 42 }
 ­ƒÄ» Enhanced analyzeScreenArea for bet
 ­ƒô© Enhanced screenshot capture with multiple methods...
 ­ƒÜÇ Trying last successful method: Electron
 ­ƒô© Trying Electron desktopCapturer...
-[48664:0830/233933.213:ERROR:dxgi_output_duplicator.cc(116)] IDXGIDuplicateOutput does not use RGBA (8 bit) format, which is required by downstream components, format is 10
-[48664:0830/233933.346:ERROR:dxgi_output_duplicator.cc(116)] IDXGIDuplicateOutput does not use RGBA (8 bit) format, which is required by downstream components, format is 10
-[48664:0830/233933.507:ERROR:dxgi_output_duplicator.cc(116)] IDXGIDuplicateOutput does not use RGBA (8 bit) format, which is required by downstream components, format is 10
-Ô£à Electron screenshot: 935752 bytes
+[31672:0830/234634.426:ERROR:dxgi_output_duplicator.cc(116)] IDXGIDuplicateOutput does not use RGBA (8 bit) format, which is required by downstream components, format is 10
+[31672:0830/234634.558:ERROR:dxgi_output_duplicator.cc(116)] IDXGIDuplicateOutput does not use RGBA (8 bit) format, which is required by downstream components, format is 10
+Ô£à Electron screenshot: 933577 bytes
 Ô£à Electron method worked again
-­ƒô© Screenshot captured: 935752 bytes via Electron
+­ƒô© Screenshot captured: 933577 bytes via Electron
 ­ƒÄ» Enhanced OCR analysis for bet...
 ­ƒöì Advanced analysis for bet...
 ­ƒöì Extracting bet area with enhanced validation...
 ­ƒôÀ Full screenshot: 1920x1080
-­ƒôÉ Requested area: 1355,1078 99x44
-Ô£à Safe extraction area: 1355,1070 99x15
-ÔØî Enhanced area extraction failed for bet: Error: extract_area: bad extract area
-    at Sharp.toBuffer (C:\Users\Joshua\OneDrive\Dokumente\programming\slot-tracker\node_modules\sharp\lib\output.js:163:17)
-    at EnhancedScreenshotOCR.extractAreaProperly (C:\Users\Joshua\OneDrive\Dokumente\programming\slot-tracker\enhanced-screenshot-ocr.js:271:18)
-    at async EnhancedScreenshotOCR.analyzeAreaAdvanced (C:\Users\Joshua\OneDrive\Dokumente\programming\slot-tracker\enhanced-screenshot-ocr.js:302:31)
-    at async EnhancedScreenshotOCR.analyzeAreaWithOCR (C:\Users\Joshua\OneDrive\Dokumente\programming\slot-tracker\enhanced-screenshot-ocr.js:436:28)
-    at async EnhancedScreenshotOCR.analyzeScreenArea (C:\Users\Joshua\OneDrive\Dokumente\programming\slot-tracker\enhanced-screenshot-ocr.js:481:28)
-    at async C:\Users\Joshua\OneDrive\Dokumente\programming\slot-tracker\main.js:1513:31
-    at async WebContents.<anonymous> (node:electron/js2c/browser_init:2:79665)
-ÔØî Advanced analysis failed for bet: Error: extract_area: bad extract area
-    at Sharp.toBuffer (C:\Users\Joshua\OneDrive\Dokumente\programming\slot-tracker\node_modules\sharp\lib\output.js:163:17)
-    at EnhancedScreenshotOCR.extractAreaProperly (C:\Users\Joshua\OneDrive\Dokumente\programming\slot-tracker\enhanced-screenshot-ocr.js:271:18)
-    at async EnhancedScreenshotOCR.analyzeAreaAdvanced (C:\Users\Joshua\OneDrive\Dokumente\programming\slot-tracker\enhanced-screenshot-ocr.js:302:31)
-    at async EnhancedScreenshotOCR.analyzeAreaWithOCR (C:\Users\Joshua\OneDrive\Dokumente\programming\slot-tracker\enhanced-screenshot-ocr.js:436:28)
-    at async EnhancedScreenshotOCR.analyzeScreenArea (C:\Users\Joshua\OneDrive\Dokumente\programming\slot-tracker\enhanced-screenshot-ocr.js:481:28)
-    at async C:\Users\Joshua\OneDrive\Dokumente\programming\slot-tracker\main.js:1513:31
-    at async WebContents.<anonymous> (node:electron/js2c/browser_init:2:79665)
+­ƒôÉ Requested area: 1356,1079 98x42
+Ô£à Safe extraction area: 1356,1070 98x10
+­ƒôª Extracted image: 98x10
+­ƒÆ¥ Debug image saved: C:\Users\Joshua\OneDrive\Dokumente\programming\slot-tracker\ocr-debug\extracted-bet-1756590394821.png
+­ƒôè Image metrics for bet: { size: '98x10', contrast: 0, brightness: '81.00', channels: 3 }
+­ƒôè Advanced bet result: { value: 0, confidence: 10, method: 'FALLBACK' }
 Ô£à Enhanced OCR result for bet: {
   value: 0,
-  confidence: 0,
-  method: 'ENHANCED_OCR_ANALYSIS_FAILED',
+  confidence: 10,
+  method: 'ENHANCED_OCR_FALLBACK',
   captureMethod: 'Electron'
 }
-Ô£à ENHANCED OCR bet: "ERROR" -> 0 (0% confidence via UNKNOWN)
-­ƒôè ENHANCED OCR analyzing win area: { x: 962, y: 1078, width: 112, height: 48 }
+Ô£à ENHANCED OCR bet: "Empty" -> 0 (10% confidence via UNKNOWN)
+­ƒôè ENHANCED OCR analyzing win area: { x: 962, y: 1082, width: 110, height: 43 }
 ­ƒÄ» Enhanced analyzeScreenArea for win
 ­ƒô© Enhanced screenshot capture with multiple methods...
 ­ƒÜÇ Trying last successful method: Electron
 ­ƒô© Trying Electron desktopCapturer...
-[48664:0830/233934.265:ERROR:dxgi_output_duplicator.cc(116)] IDXGIDuplicateOutput does not use RGBA (8 bit) format, which is required by downstream components, format is 10
-[48664:0830/233934.389:ERROR:dxgi_output_duplicator.cc(116)] IDXGIDuplicateOutput does not use RGBA (8 bit) format, which is required by downstream components, format is 10
-[48664:0830/233934.537:ERROR:dxgi_output_duplicator.cc(116)] IDXGIDuplicateOutput does not use RGBA (8 bit) format, which is required by downstream components, format is 10
-Ô£à Electron screenshot: 932801 bytes
+[31672:0830/234634.946:ERROR:dxgi_output_duplicator.cc(116)] IDXGIDuplicateOutput does not use RGBA (8 bit) format, which is required by downstream components, format is 10
+[31672:0830/234635.073:ERROR:dxgi_output_duplicator.cc(116)] IDXGIDuplicateOutput does not use RGBA (8 bit) format, which is required by downstream components, format is 10
+[31672:0830/234635.225:ERROR:dxgi_output_duplicator.cc(116)] IDXGIDuplicateOutput does not use RGBA (8 bit) format, which is required by downstream components, format is 10
+Ô£à Electron screenshot: 933994 bytes
 Ô£à Electron method worked again
-­ƒô© Screenshot captured: 932801 bytes via Electron
+­ƒô© Screenshot captured: 933994 bytes via Electron
 ­ƒÄ» Enhanced OCR analysis for win...
 ­ƒöì Advanced analysis for win...
 ­ƒöì Extracting win area with enhanced validation...
 ­ƒôÀ Full screenshot: 1920x1080
-­ƒôÉ Requested area: 962,1078 112x48
-Ô£à Safe extraction area: 962,1070 112x15
-ÔØî Enhanced area extraction failed for win: Error: extract_area: bad extract area
-    at Sharp.toBuffer (C:\Users\Joshua\OneDrive\Dokumente\programming\slot-tracker\node_modules\sharp\lib\output.js:163:17)
-    at EnhancedScreenshotOCR.extractAreaProperly (C:\Users\Joshua\OneDrive\Dokumente\programming\slot-tracker\enhanced-screenshot-ocr.js:271:18)
-    at async EnhancedScreenshotOCR.analyzeAreaAdvanced (C:\Users\Joshua\OneDrive\Dokumente\programming\slot-tracker\enhanced-screenshot-ocr.js:302:31)
-    at async EnhancedScreenshotOCR.analyzeAreaWithOCR (C:\Users\Joshua\OneDrive\Dokumente\programming\slot-tracker\enhanced-screenshot-ocr.js:436:28)
-    at async EnhancedScreenshotOCR.analyzeScreenArea (C:\Users\Joshua\OneDrive\Dokumente\programming\slot-tracker\enhanced-screenshot-ocr.js:481:28)
-    at async C:\Users\Joshua\OneDrive\Dokumente\programming\slot-tracker\main.js:1513:31
-    at async WebContents.<anonymous> (node:electron/js2c/browser_init:2:79665)
-ÔØî Advanced analysis failed for win: Error: extract_area: bad extract area
-    at Sharp.toBuffer (C:\Users\Joshua\OneDrive\Dokumente\programming\slot-tracker\node_modules\sharp\lib\output.js:163:17)
-    at EnhancedScreenshotOCR.extractAreaProperly (C:\Users\Joshua\OneDrive\Dokumente\programming\slot-tracker\enhanced-screenshot-ocr.js:271:18)
-    at async EnhancedScreenshotOCR.analyzeAreaAdvanced (C:\Users\Joshua\OneDrive\Dokumente\programming\slot-tracker\enhanced-screenshot-ocr.js:302:31)
-    at async EnhancedScreenshotOCR.analyzeAreaWithOCR (C:\Users\Joshua\OneDrive\Dokumente\programming\slot-tracker\enhanced-screenshot-ocr.js:436:28)
-    at async EnhancedScreenshotOCR.analyzeScreenArea (C:\Users\Joshua\OneDrive\Dokumente\programming\slot-tracker\enhanced-screenshot-ocr.js:481:28)
-    at async C:\Users\Joshua\OneDrive\Dokumente\programming\slot-tracker\main.js:1513:31
-    at async WebContents.<anonymous> (node:electron/js2c/browser_init:2:79665)
+­ƒôÉ Requested area: 962,1082 110x43
+Ô£à Safe extraction area: 962,1070 110x10
+­ƒôª Extracted image: 110x10
+­ƒÆ¥ Debug image saved: C:\Users\Joshua\OneDrive\Dokumente\programming\slot-tracker\ocr-debug\extracted-win-1756590395422.png
+­ƒôè Image metrics for win: { size: '110x10', contrast: 0, brightness: '81.00', channels: 3 }
+­ƒôè Advanced win result: { value: 0, confidence: 10, method: 'FALLBACK' }
 Ô£à Enhanced OCR result for win: {
   value: 0,
-  confidence: 0,
-  method: 'ENHANCED_OCR_ANALYSIS_FAILED',
+  confidence: 10,
+  method: 'ENHANCED_OCR_FALLBACK',
   captureMethod: 'Electron'
 }
-Ô£à ENHANCED OCR win: "ERROR" -> 0 (0% confidence via UNKNOWN)
-­ƒôè ENHANCED OCR analyzing balance area: { x: 547, y: 1075, width: 126, height: 46 }
+Ô£à ENHANCED OCR win: "Empty" -> 0 (10% confidence via UNKNOWN)
+­ƒôè ENHANCED OCR analyzing balance area: { x: 552, y: 1075, width: 120, height: 48 }
 ­ƒÄ» Enhanced analyzeScreenArea for balance
 ­ƒô© Enhanced screenshot capture with multiple methods...
 ­ƒÜÇ Trying last successful method: Electron
 ­ƒô© Trying Electron desktopCapturer...
-[48664:0830/233934.831:ERROR:dxgi_output_duplicator.cc(116)] IDXGIDuplicateOutput does not use RGBA (8 bit) format, which is required by downstream components, format is 10
-[48664:0830/233934.958:ERROR:dxgi_output_duplicator.cc(116)] IDXGIDuplicateOutput does not use RGBA (8 bit) format, which is required by downstream components, format is 10
-[48664:0830/233935.102:ERROR:dxgi_output_duplicator.cc(116)] IDXGIDuplicateOutput does not use RGBA (8 bit) format, which is required by downstream components, format is 10
-Ô£à Electron screenshot: 933344 bytes
+[31672:0830/234635.558:ERROR:dxgi_output_duplicator.cc(116)] IDXGIDuplicateOutput does not use RGBA (8 bit) format, which is required by downstream components, format is 10
+[31672:0830/234635.688:ERROR:dxgi_output_duplicator.cc(116)] IDXGIDuplicateOutput does not use RGBA (8 bit) format, which is required by downstream components, format is 10
+[31672:0830/234635.833:ERROR:dxgi_output_duplicator.cc(116)] IDXGIDuplicateOutput does not use RGBA (8 bit) format, which is required by downstream components, format is 10
+Ô£à Electron screenshot: 933097 bytes
 Ô£à Electron method worked again
-­ƒô© Screenshot captured: 933344 bytes via Electron
+­ƒô© Screenshot captured: 933097 bytes via Electron
 ­ƒÄ» Enhanced OCR analysis for balance...
 ­ƒöì Advanced analysis for balance...
 ­ƒöì Extracting balance area with enhanced validation...
 ­ƒôÀ Full screenshot: 1920x1080
-­ƒôÉ Requested area: 547,1075 126x46
-Ô£à Safe extraction area: 547,1070 126x15
-ÔØî Enhanced area extraction failed for balance: Error: extract_area: bad extract area
-    at Sharp.toBuffer (C:\Users\Joshua\OneDrive\Dokumente\programming\slot-tracker\node_modules\sharp\lib\output.js:163:17)
-    at EnhancedScreenshotOCR.extractAreaProperly (C:\Users\Joshua\OneDrive\Dokumente\programming\slot-tracker\enhanced-screenshot-ocr.js:271:18)
-    at async EnhancedScreenshotOCR.analyzeAreaAdvanced (C:\Users\Joshua\OneDrive\Dokumente\programming\slot-tracker\enhanced-screenshot-ocr.js:302:31)
-    at async EnhancedScreenshotOCR.analyzeAreaWithOCR (C:\Users\Joshua\OneDrive\Dokumente\programming\slot-tracker\enhanced-screenshot-ocr.js:436:28)
-    at async EnhancedScreenshotOCR.analyzeScreenArea (C:\Users\Joshua\OneDrive\Dokumente\programming\slot-tracker\enhanced-screenshot-ocr.js:481:28)
-    at async C:\Users\Joshua\OneDrive\Dokumente\programming\slot-tracker\main.js:1513:31
-    at async WebContents.<anonymous> (node:electron/js2c/browser_init:2:79665)
-ÔØî Advanced analysis failed for balance: Error: extract_area: bad extract area
-    at Sharp.toBuffer (C:\Users\Joshua\OneDrive\Dokumente\programming\slot-tracker\node_modules\sharp\lib\output.js:163:17)
-    at EnhancedScreenshotOCR.extractAreaProperly (C:\Users\Joshua\OneDrive\Dokumente\programming\slot-tracker\enhanced-screenshot-ocr.js:271:18)
-    at async EnhancedScreenshotOCR.analyzeAreaAdvanced (C:\Users\Joshua\OneDrive\Dokumente\programming\slot-tracker\enhanced-screenshot-ocr.js:302:31)
-    at async EnhancedScreenshotOCR.analyzeAreaWithOCR (C:\Users\Joshua\OneDrive\Dokumente\programming\slot-tracker\enhanced-screenshot-ocr.js:436:28)
-    at async EnhancedScreenshotOCR.analyzeScreenArea (C:\Users\Joshua\OneDrive\Dokumente\programming\slot-tracker\enhanced-screenshot-ocr.js:481:28)
-    at async C:\Users\Joshua\OneDrive\Dokumente\programming\slot-tracker\main.js:1513:31
-    at async WebContents.<anonymous> (node:electron/js2c/browser_init:2:79665)
+­ƒôÉ Requested area: 552,1075 120x48
+Ô£à Safe extraction area: 552,1070 120x10
+­ƒôª Extracted image: 120x10
+­ƒÆ¥ Debug image saved: C:\Users\Joshua\OneDrive\Dokumente\programming\slot-tracker\ocr-debug\extracted-balance-1756590396029.png
+­ƒôè Image metrics for balance: { size: '120x10', contrast: 0, brightness: '81.00', channels: 3 }
+­ƒôè Advanced balance result: { value: 0, confidence: 10, method: 'FALLBACK' }
 Ô£à Enhanced OCR result for balance: {
   value: 0,
-  confidence: 0,
-  method: 'ENHANCED_OCR_ANALYSIS_FAILED',
+  confidence: 10,
+  method: 'ENHANCED_OCR_FALLBACK',
   captureMethod: 'Electron'
 }
-Ô£à ENHANCED OCR balance: "ERROR" -> 0 (0% confidence via UNKNOWN)
+Ô£à ENHANCED OCR balance: "Empty" -> 0 (10% confidence via UNKNOWN)
 ­ƒöÜ Enhanced Screenshot OCR terminated
 ­ƒº¢ Test ENHANCED OCR Engine cleaned up
 ­ƒôè ENHANCED OCR Summary: 3/3 areas successful (100.0%)
@@ -156,33 +119,33 @@ Python method failed: Python screenshot failed: Python failed:
     {
       type: 'bet',
       value: '0',
-      confidence: 0,
-      text: 'ERROR',
+      confidence: 10,
+      text: 'Empty',
       area: [Object],
       method: 'ENHANCED_OCR_UNKNOWN',
-      areaInfo: '99x44px @ (1355, 1078)',
+      areaInfo: '98x42px @ (1356, 1079)',
       analysisNotes: 'Low confidence via UNKNOWN - may need area adjustment',
       captureMethod: 'UNKNOWN'
     },
     {
       type: 'win',
       value: '0',
-      confidence: 0,
-      text: 'ERROR',
+      confidence: 10,
+      text: 'Empty',
       area: [Object],
       method: 'ENHANCED_OCR_UNKNOWN',
-      areaInfo: '112x48px @ (962, 1078)',
+      areaInfo: '110x43px @ (962, 1082)',
       analysisNotes: 'Low confidence via UNKNOWN - may need area adjustment',
       captureMethod: 'UNKNOWN'
     },
     {
       type: 'balance',
       value: '0',
-      confidence: 0,
-      text: 'ERROR',
+      confidence: 10,
+      text: 'Empty',
       area: [Object],
       method: 'ENHANCED_OCR_UNKNOWN',
-      areaInfo: '126x46px @ (547, 1075)',
+      areaInfo: '120x48px @ (552, 1075)',
       analysisNotes: 'Low confidence via UNKNOWN - may need area adjustment',
       captureMethod: 'UNKNOWN'
     }

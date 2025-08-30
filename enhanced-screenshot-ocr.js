@@ -250,19 +250,42 @@ except Exception as e:
             console.log(`📷 Full screenshot: ${metadata.width}x${metadata.height}`);
             console.log(`📐 Requested area: ${area.x},${area.y} ${area.width}x${area.height}`);
             
-            // Enhanced bounds validation
+            // FIXED: Enhanced bounds validation with proper calculations
+            let safeLeft = Math.max(0, Math.min(area.x, metadata.width - 1));
+            let safeTop = Math.max(0, Math.min(area.y, metadata.height - 1));
+            
+            // Calculate maximum possible width/height from the safe position
+            let maxWidth = metadata.width - safeLeft;
+            let maxHeight = metadata.height - safeTop;
+            
+            // Use requested dimensions but constrain to available space
+            let safeWidth = Math.max(10, Math.min(area.width, maxWidth));
+            let safeHeight = Math.max(10, Math.min(area.height, maxHeight));
+            
+            // If requested area goes beyond image bounds, adjust position backwards
+            if (safeLeft + safeWidth > metadata.width) {
+                safeLeft = Math.max(0, metadata.width - safeWidth);
+            }
+            if (safeTop + safeHeight > metadata.height) {
+                safeTop = Math.max(0, metadata.height - safeHeight);
+            }
+            
             const safeArea = {
-                left: Math.max(0, Math.min(area.x, metadata.width - 10)),
-                top: Math.max(0, Math.min(area.y, metadata.height - 10)),
-                width: Math.min(area.width, metadata.width - area.x),
-                height: Math.min(area.height, metadata.height - area.y)
+                left: safeLeft,
+                top: safeTop,
+                width: safeWidth,
+                height: safeHeight
             };
             
-            // Ensure the area is within reasonable bounds
-            safeArea.width = Math.max(20, Math.min(safeArea.width, metadata.width - safeArea.left));
-            safeArea.height = Math.max(15, Math.min(safeArea.height, metadata.height - safeArea.top));
-            
             console.log(`✅ Safe extraction area: ${safeArea.left},${safeArea.top} ${safeArea.width}x${safeArea.height}`);
+            
+            // FINAL VALIDATION: Ensure area is completely within image bounds
+            if (safeArea.left < 0 || safeArea.top < 0 || 
+                safeArea.left + safeArea.width > metadata.width || 
+                safeArea.top + safeArea.height > metadata.height || 
+                safeArea.width <= 0 || safeArea.height <= 0) {
+                throw new Error(`Invalid extraction area: ${JSON.stringify(safeArea)} for image ${metadata.width}x${metadata.height}`);
+            }
             
             // Extract area with enhanced processing
             const extracted = await image
