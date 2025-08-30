@@ -1,0 +1,71 @@
+­ƒöì Running ENHANCED OCR on configured areas...
+Ô£à Quick Fix OCR initialized
+Ô£à Test ENHANCED OCR Engine initialized
+­ƒôè ENHANCED OCR analyzing bet area: { x: 1412, y: 1029, width: 11, height: 20 }
+ENHANCED OCR error for bet: TypeError: testOCREngine.analyzeScreenArea is not a function
+    at C:\Users\Joshua\OneDrive\Dokumente\programming\slot-tracker\main.js:1512:51
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async WebContents.<anonymous> (node:electron/js2c/browser_init:2:79665)
+­ƒôè ENHANCED OCR analyzing win area: { x: 967, y: 1079, width: 108, height: 47 }
+ENHANCED OCR error for win: TypeError: testOCREngine.analyzeScreenArea is not a function
+    at C:\Users\Joshua\OneDrive\Dokumente\programming\slot-tracker\main.js:1512:51
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async WebContents.<anonymous> (node:electron/js2c/browser_init:2:79665)
+­ƒôè ENHANCED OCR analyzing balance area: { x: 556, y: 1075, width: 117, height: 51 }
+ENHANCED OCR error for balance: TypeError: testOCREngine.analyzeScreenArea is not a function
+    at C:\Users\Joshua\OneDrive\Dokumente\programming\slot-tracker\main.js:1512:51
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async WebContents.<anonymous> (node:electron/js2c/browser_init:2:79665)
+­ƒöÜ Quick Fix OCR terminated
+­ƒº¢ Test ENHANCED OCR Engine cleaned up
+­ƒôè ENHANCED OCR Summary: 0/3 areas successful (0.0%)
+­ƒöº Capture methods used:
+Ô£à ENHANCED OCR Test results: {
+  success: true,
+  bet: '0.00',
+  win: '0.00',
+  balance: '0.00',
+  message: 'Analyzing 3 configured screen areas with ENHANCED OCR',
+  areasAnalyzed: [
+    {
+      type: 'bet',
+      value: '0.00',
+      confidence: 0,
+      text: 'OCR_ERROR',
+      area: [Object],
+      error: 'testOCREngine.analyzeScreenArea is not a function',
+      method: 'ENHANCED_OCR_FAILED',
+      areaInfo: '11x20px @ (1412, 1029)',
+      analysisNotes: 'OCR processing failed'
+    },
+    {
+      type: 'win',
+      value: '0.00',
+      confidence: 0,
+      text: 'OCR_ERROR',
+      area: [Object],
+      error: 'testOCREngine.analyzeScreenArea is not a function',
+      method: 'ENHANCED_OCR_FAILED',
+      areaInfo: '108x47px @ (967, 1079)',
+      analysisNotes: 'OCR processing failed'
+    },
+    {
+      type: 'balance',
+      value: '0.00',
+      confidence: 0,
+      text: 'OCR_ERROR',
+      area: [Object],
+      error: 'testOCREngine.analyzeScreenArea is not a function',
+      method: 'ENHANCED_OCR_FAILED',
+      areaInfo: '117x51px @ (556, 1075)',
+      analysisNotes: 'OCR processing failed'
+    }
+  ],
+  screenshotInfo: {},
+  summary: {
+    successfulCaptures: 0,
+    totalAreas: 3,
+    successRate: '0.0%',
+    captureMethods: []
+  }
+}

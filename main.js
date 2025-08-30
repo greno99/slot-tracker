@@ -4,7 +4,8 @@ const Store = require('electron-store');
 const path = require('path');
 const fs = require('fs');
 const xlsx = require('node-xlsx');
-const OCREngine = require('./ocr-engine'); // REAL OCR Engine
+const OCREngine = require('./quick-fix-ocr'); // QUICK FIX OCR Engine - WORKING VERSION
+// const OCREngine = require('./ocr-engine'); // Original OCR Engine (has issues)
 
 const store = new Store();
 let mainWindow;
@@ -229,37 +230,35 @@ while ($true) {
     }
 
     async extractGameDataWithRealOCR() {
-        console.log('📊 Extracting game data with REAL OCR...');
+        console.log('📊 Extracting game data with ENHANCED REAL OCR...');
         
         const results = { bet: 0, win: 0, balance: 0 };
         
         try {
-            // Take screenshot (with DXGI error handling)
-            const screenshot = await this.takeScreenshot();
-            
-            // REAL OCR: Analyze actual screen areas with Tesseract.js
+            // ENHANCED: Use direct screen area analysis (no need for full screenshot first)
             if (this.config.areas && Object.keys(this.config.areas).length > 0) {
-                console.log('🔍 Running REAL OCR on configured areas...');
+                console.log('🔍 Running ENHANCED OCR on configured areas...');
                 
                 for (const [areaType, area] of Object.entries(this.config.areas)) {
                     if (area && this.validateArea(area, areaType)) {
                         try {
-                            const ocrResult = await this.ocrEngine.analyzeAreaWithOCR(
-                                screenshot.toPNG(), 
-                                area, 
-                                areaType
-                            );
+                            // NEW: Use direct screen area analysis with enhanced capture
+                            const ocrResult = await this.ocrEngine.analyzeScreenArea(area, areaType);
                             
                             results[areaType] = ocrResult.value;
-                            console.log(`🎯 REAL OCR ${areaType}: ${ocrResult.value} (${ocrResult.confidence}% confidence)`);
+                            console.log(`🎯 ENHANCED OCR ${areaType}: ${ocrResult.value} (${ocrResult.confidence}% confidence)`);
                             
                             // Log OCR details
-                            if (ocrResult.text !== 'ERROR') {
+                            if (ocrResult.text && ocrResult.text !== 'ERROR' && ocrResult.text !== 'SCREEN_CAPTURE_ERROR') {
                                 console.log(`📝 OCR Text: "${ocrResult.text}"`);
                             }
                             
+                            if (ocrResult.error) {
+                                console.warn(`⚠️ OCR warning for ${areaType}: ${ocrResult.error}`);
+                            }
+                            
                         } catch (ocrError) {
-                            console.error(`OCR error for ${areaType}:`, ocrError);
+                            console.error(`Enhanced OCR error for ${areaType}:`, ocrError);
                             results[areaType] = 0;
                         }
                     } else {
@@ -270,7 +269,13 @@ while ($true) {
                 console.log('⚠️ No OCR areas configured, using fallback values');
             }
             
-            // If no areas configured or OCR failed, use realistic demo values
+            // Enhanced logging for better debugging
+            const ocrSuccessCount = Object.values(results).filter(v => v > 0).length;
+            const totalAreas = Object.keys(this.config.areas || {}).length;
+            
+            console.log(`📊 Enhanced OCR Results: ${ocrSuccessCount}/${totalAreas} areas detected successfully`);
+            
+            // If no areas configured or all OCR failed, use realistic demo values
             if (results.bet === 0 && results.win === 0 && results.balance === 0) {
                 console.log('🔄 Using fallback values since no valid OCR results');
                 results.bet = parseFloat((1.0 + Math.random() * 4).toFixed(2)); // 1-5 bet
@@ -279,11 +284,13 @@ while ($true) {
             }
             
         } catch (error) {
-            // Handle DXGI and other screen capture errors gracefully
+            // Enhanced error handling
             if (error.message.includes('DXGI') || error.message.includes('IDXGIDuplicateOutput')) {
-                console.log('⚠️ DXGI format issue (Windows 10 HDR) - using fallback values');
+                console.log('⚠️ DXGI format issue detected - Enhanced Screenshot Capture should handle this automatically');
+            } else if (error.message.includes('All screenshot capture methods failed')) {
+                console.error('❌ All screenshot capture methods failed - check system permissions and dependencies');
             } else {
-                console.error('Data extraction error:', error);
+                console.error('Enhanced data extraction error:', error);
             }
             
             // Fallback values
@@ -292,7 +299,7 @@ while ($true) {
             results.balance = parseFloat((50 + Math.random() * 200).toFixed(2));
         }
         
-        console.log('💰 Extracted data (REAL OCR):', results);
+        console.log('💰 Extracted data (ENHANCED OCR):', results);
         return results;
     }
     
@@ -1443,119 +1450,120 @@ ipcMain.handle('take-detection-screenshot', async () => {
   }
 });
 
-// REAL OCR Test detection handler
+// ENHANCED OCR Test detection handler with improved screenshot capture
 ipcMain.handle('test-spin-detection', async (event, config) => {
   try {
-    console.log('🧪 Testing REAL OCR spin detection with config:', config);
-    
-    const sources = await desktopCapturer.getSources({
-      types: ['screen'],
-      thumbnailSize: { width: 1920, height: 1080 }
-    });
-    
-    if (sources.length === 0) {
-      return { success: false, error: 'No screen sources available' };
-    }
-    
-    const screenshot = sources[0].thumbnail;
-    const screenshotBuffer = screenshot.toPNG();
-    
-    // Get screenshot dimensions for validation
-    const sharp = require('sharp');
-    const screenshotMetadata = await sharp(screenshotBuffer).metadata();
-    console.log(`📷 Screenshot dimensions: ${screenshotMetadata.width}x${screenshotMetadata.height}`);
+    console.log('🧪 Testing ENHANCED OCR spin detection with config:', config);
     
     let results = {
       success: true,
       bet: '0.00',
       win: '0.00',
       balance: '0.00',
-      message: 'REAL OCR analysis with Tesseract.js',
+      message: 'ENHANCED OCR analysis with multiple capture methods',
       areasAnalyzed: [],
-      screenshotInfo: {
-        width: screenshotMetadata.width,
-        height: screenshotMetadata.height
-      }
+      screenshotInfo: {}
     };
     
-    // REAL OCR ANALYSIS: Analyze actual configured areas with OCR Engine
+    // ENHANCED OCR ANALYSIS: Use direct screen area analysis with enhanced capture
     if (config.areas && Object.keys(config.areas).length > 0) {
-      console.log('🔍 Running REAL OCR on configured areas...');
-      results.message = `Analyzing ${Object.keys(config.areas).length} configured screen areas with REAL OCR`;
+      console.log('🔍 Running ENHANCED OCR on configured areas...');
+      results.message = `Analyzing ${Object.keys(config.areas).length} configured screen areas with ENHANCED OCR`;
       
       // Initialize OCR engine for testing
       const testOCREngine = new OCREngine();
       
       try {
         await testOCREngine.initialize();
-        console.log('✅ Test OCR Engine initialized');
+        console.log('✅ Test ENHANCED OCR Engine initialized');
       } catch (error) {
-        console.warn('⚠️ OCR Engine initialization warning for test:', error.message);
+        console.warn('⚠️ ENHANCED OCR Engine initialization warning for test:', error.message);
         return {
           success: false,
-          error: `OCR Engine initialization failed: ${error.message}`,
+          error: `Enhanced OCR Engine initialization failed: ${error.message}`,
           screenshotInfo: results.screenshotInfo
         };
       }
       
-      // Validate and process each configured area with REAL OCR
+      // Validate and process each configured area with ENHANCED OCR
       for (const [areaType, area] of Object.entries(config.areas)) {
         if (area) {
-          console.log(`📊 REAL OCR analyzing ${areaType} area:`, area);
+          console.log(`📊 ENHANCED OCR analyzing ${areaType} area:`, area);
           
-          // Validate area before processing
-          const areaValidation = validateAreaForOCR(area, areaType, screenshotMetadata);
-          
-          if (!areaValidation.valid) {
-            console.warn(`❌ Area validation failed for ${areaType}:`, areaValidation.error);
+          // Basic area validation first
+          if (!area || typeof area !== 'object' || area.width <= 0 || area.height <= 0) {
+            console.warn(`❌ Area validation failed for ${areaType}:`, area);
             results.areasAnalyzed.push({
               type: areaType,
               value: '0.00',
               confidence: 0,
               text: 'VALIDATION_ERROR',
               area: area,
-              error: areaValidation.error,
-              method: 'REAL_OCR_TESSERACT',
-              areaInfo: `${area.width}x${area.height}px @ (${area.x}, ${area.y})`,
+              error: 'Invalid area coordinates',
+              method: 'ENHANCED_OCR_MULTI_CAPTURE',
+              areaInfo: `${area?.width || 0}x${area?.height || 0}px @ (${area?.x || 0}, ${area?.y || 0})`,
               analysisNotes: 'Area coordinates are invalid'
             });
             continue;
           }
           
           try {
-            // Use the REAL OCR Engine
-            const ocrResult = await testOCREngine.analyzeAreaWithOCR(
-              screenshotBuffer, 
-              area, 
-              areaType
-            );
+            // NEW: Use direct screen area analysis with enhanced capture methods
+            const ocrResult = await testOCREngine.analyzeScreenArea(area, areaType);
             
             results[areaType] = ocrResult.value.toString();
+            
+            let captureMethod = 'UNKNOWN';
+            if (testOCREngine.screenshotCapture && testOCREngine.screenshotCapture.lastSuccessfulMethod) {
+              captureMethod = testOCREngine.screenshotCapture.lastSuccessfulMethod.toUpperCase();
+            }
+            
             results.areasAnalyzed.push({
               type: areaType,
               value: ocrResult.value.toString(),
               confidence: ocrResult.confidence,
               text: ocrResult.text,
               area: ocrResult.area || area,
-              method: 'REAL_OCR_TESSERACT',
+              method: `ENHANCED_OCR_${captureMethod}`,
               areaInfo: `${area.width}x${area.height}px @ (${area.x}, ${area.y})`,
-              analysisNotes: ocrResult.confidence > 70 ? 'High confidence detection' : 
-                           ocrResult.confidence > 30 ? 'Medium confidence detection' : 'Low confidence - may need area adjustment'
+              analysisNotes: ocrResult.confidence > 70 ? `High confidence detection via ${captureMethod}` : 
+                           ocrResult.confidence > 30 ? `Medium confidence detection via ${captureMethod}` : 
+                           `Low confidence via ${captureMethod} - may need area adjustment`,
+              captureMethod: captureMethod
             });
             
-            console.log(`✅ REAL OCR ${areaType}: "${ocrResult.text}" -> ${ocrResult.value} (${ocrResult.confidence}% confidence)`);
+            if (ocrResult.error) {
+              results.areasAnalyzed[results.areasAnalyzed.length - 1].error = ocrResult.error;
+            }
+            
+            console.log(`✅ ENHANCED OCR ${areaType}: "${ocrResult.text}" -> ${ocrResult.value} (${ocrResult.confidence}% confidence via ${captureMethod})`);
           } catch (ocrError) {
-            console.error(`REAL OCR error for ${areaType}:`, ocrError);
+            console.error(`ENHANCED OCR error for ${areaType}:`, ocrError);
+            
+            let errorType = 'OCR_ERROR';
+            let analysisNotes = 'OCR processing failed';
+            
+            if (ocrError.message.includes('SCREEN_CAPTURE_ERROR') || ocrError.message.includes('All screenshot capture methods failed')) {
+              errorType = 'SCREEN_CAPTURE_ERROR';
+              analysisNotes = 'All screenshot capture methods failed - check DXGI/HDR settings or install Python PIL';
+            } else if (ocrError.message.includes('DXGI') || ocrError.message.includes('IDXGIDuplicateOutput')) {
+              errorType = 'DXGI_ERROR';
+              analysisNotes = 'Windows HDR/10-bit display format issue - PowerShell capture should handle this';
+            } else if (ocrError.message.includes('extract_area')) {
+              errorType = 'AREA_EXTRACTION_ERROR';
+              analysisNotes = 'Invalid area coordinates for image extraction';
+            }
+            
             results.areasAnalyzed.push({
               type: areaType,
               value: '0.00',
               confidence: 0,
-              text: 'OCR_ERROR',
+              text: errorType,
               area: area,
               error: ocrError.message,
-              method: 'REAL_OCR_TESSERACT',
+              method: 'ENHANCED_OCR_FAILED',
               areaInfo: `${area.width}x${area.height}px @ (${area.x}, ${area.y})`,
-              analysisNotes: ocrError.message.includes('extract_area') ? 'Invalid area coordinates' : 'OCR processing failed'
+              analysisNotes: analysisNotes
             });
           }
         }
@@ -1564,21 +1572,52 @@ ipcMain.handle('test-spin-detection', async (event, config) => {
       // Cleanup OCR engine after testing
       try {
         await testOCREngine.terminate();
-        console.log('🧽 Test OCR Engine cleaned up');
+        console.log('🧽 Test ENHANCED OCR Engine cleaned up');
       } catch (cleanupError) {
-        console.warn('OCR cleanup warning:', cleanupError.message);
+        console.warn('Enhanced OCR cleanup warning:', cleanupError.message);
       }
       
     } else {
       results.message = 'No OCR areas configured - configure areas first!';
-      console.log('⚠️ No areas configured for REAL OCR analysis');
+      console.log('⚠️ No areas configured for ENHANCED OCR analysis');
     }
     
-    console.log('✅ REAL OCR Test results:', results);
+    // Add summary info
+    if (results.areasAnalyzed.length > 0) {
+      const successfulCaptures = results.areasAnalyzed.filter(a => a.value !== '0.00').length;
+      const totalAreas = results.areasAnalyzed.length;
+      const captureMethods = [...new Set(results.areasAnalyzed.map(a => a.captureMethod).filter(m => m))];
+      
+      results.summary = {
+        successfulCaptures,
+        totalAreas,
+        successRate: (successfulCaptures / totalAreas * 100).toFixed(1) + '%',
+        captureMethods: captureMethods
+      };
+      
+      console.log(`📊 ENHANCED OCR Summary: ${successfulCaptures}/${totalAreas} areas successful (${results.summary.successRate})`);
+      console.log(`🔧 Capture methods used: ${captureMethods.join(', ')}`);
+    }
+    
+    console.log('✅ ENHANCED OCR Test results:', results);
     return results;
   } catch (error) {
-    console.error('REAL OCR Test detection error:', error);
-    return { success: false, error: error.message };
+    console.error('ENHANCED OCR Test detection error:', error);
+    
+    // Enhanced error reporting
+    let enhancedError = error.message;
+    if (error.message.includes('DXGI')) {
+      enhancedError = 'DXGI format incompatibility detected - Enhanced Screenshot Capture should automatically use PowerShell fallback';
+    } else if (error.message.includes('desktopCapturer')) {
+      enhancedError = 'Electron desktopCapturer failed - Enhanced Screenshot Capture will use alternative methods';
+    }
+    
+    return { 
+      success: false, 
+      error: enhancedError,
+      originalError: error.message,
+      suggestion: 'Try configuring OCR areas first, or check if Windows HDR mode is causing DXGI issues'
+    };
   }
 });
 

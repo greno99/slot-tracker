@@ -1,11 +1,13 @@
-// ocr-engine.js - Real OCR Engine with Tesseract.js
+// ocr-engine.js - Real OCR Engine with Tesseract.js + Enhanced Screenshot Capture
 const Tesseract = require('tesseract.js');
 const sharp = require('sharp');
+const EnhancedScreenshotCapture = require('./screenshot-capture');
 
 class OCREngine {
     constructor() {
         this.worker = null;
         this.isInitialized = false;
+        this.screenshotCapture = new EnhancedScreenshotCapture();
     }
 
     async initialize() {
@@ -37,6 +39,39 @@ class OCREngine {
             console.warn('The application will continue with fallback demo values');
             this.isInitialized = false;
             // Don't throw - allow graceful degradation
+        }
+    }
+
+    // NEW: Method to analyze a screen area directly from coordinates
+    async analyzeScreenArea(area, areaType) {
+        console.log(`🔍 Analyzing screen area for ${areaType}:`, area);
+        
+        try {
+            // Capture the screen area using enhanced screenshot capture
+            const areaCapture = await this.screenshotCapture.captureScreenArea(area);
+            
+            if (!areaCapture.success) {
+                throw new Error('Failed to capture screen area');
+            }
+            
+            console.log(`✅ Screen area captured successfully using ${areaCapture.method}`);
+            
+            // Now analyze the captured area buffer with OCR
+            return await this.analyzeAreaWithOCR(areaCapture.buffer, {
+                x: 0, y: 0, // The captured buffer is already the extracted area
+                width: area.width,
+                height: area.height
+            }, areaType);
+            
+        } catch (error) {
+            console.error(`Screen area analysis error for ${areaType}:`, error.message);
+            return {
+                text: 'SCREEN_CAPTURE_ERROR',
+                value: 0,
+                confidence: 0,
+                error: error.message,
+                area: area
+            };
         }
     }
 
