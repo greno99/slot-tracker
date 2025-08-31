@@ -20,7 +20,8 @@ async function testBrowserOCR() {
         
         console.log(`✅ Found ${windows.length} browser windows:`);
         windows.forEach((win, index) => {
-            console.log(`   ${index + 1}. ${win.ProcessName} - ${win.Title.substring(0, 60)}...`);
+            const browserType = win.BrowserType || win.ProcessName;
+            console.log(`   ${index + 1}. ${browserType} (${win.ProcessName}) - ${win.Title.substring(0, 60)}...`);
             console.log(`      Size: ${win.Width}×${win.Height} at (${win.X}, ${win.Y})`);
         });
         
@@ -29,7 +30,8 @@ async function testBrowserOCR() {
         
         if (windows.length > 0) {
             const testWindow = windows[0]; // Use first browser window
-            console.log(`🎯 Testing capture of: ${testWindow.ProcessName}`);
+            const browserType = testWindow.BrowserType || testWindow.ProcessName;
+            console.log(`🎯 Testing capture of: ${browserType} (${testWindow.ProcessName})`);
             
             try {
                 const capture = await browserOCR.captureBrowserWindow(testWindow);

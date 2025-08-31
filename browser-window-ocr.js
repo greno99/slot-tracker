@@ -33,6 +33,25 @@ class BrowserWindowOCR {
     }
 
     async detectWindowsApplications() {
+        console.log('🔍 Attempting primary browser detection...');
+        
+        try {
+            // Try the original .NET Framework approach first
+            const windows = await this.detectWindowsApplicationsOriginal();
+            if (windows && windows.length > 0) {
+                console.log('✅ Primary detection successful');
+                return windows;
+            }
+        } catch (error) {
+            console.log('⚠️ Primary detection failed, using fallback...');
+        }
+        
+        // Fallback to alternative detection method
+        console.log('🔄 Using fallback browser detection (no .NET Framework required)...');
+        return await this.detectWindowsApplicationsFallback();
+    }
+
+    async detectWindowsApplicationsOriginal() {
         try {
             // PowerShell script to enumerate browser windows
             const psScript = `
@@ -86,36 +105,71 @@ $callback = {
             [WindowEnumerator]::GetWindowText($hWnd, $sb, $sb.Capacity)
             $title = $sb.ToString()
             
-            # Check if it's a browser window
-            $browserKeywords = @('Chrome', 'Firefox', 'Edge', 'Safari', 'Opera', 'Brave')
+            # Get process information for better detection
+            $processId = 0
+            [WindowEnumerator]::GetWindowThreadProcessId($hWnd, [ref]$processId)
+            
+            $process = Get-Process -Id $processId -ErrorAction SilentlyContinue
+            $processName = if ($process) { $process.ProcessName } else { "Unknown" }
+            
+            # Enhanced browser detection - check both title and process name
             $isBrowser = $false
-            foreach ($keyword in $browserKeywords) {
-                if ($title -like "*$keyword*" -or $title -like "*Mozilla*") {
-                    $isBrowser = $true
-                    break
-                }
+            $browserType = ""
+            
+            # Firefox detection (multiple patterns)
+            if ($processName -match "firefox" -or $title -match "Firefox" -or $title -match "Mozilla") {
+                $isBrowser = $true
+                $browserType = "Firefox"
+            }
+            # Chrome detection
+            elseif ($processName -match "chrome" -or $title -match "Chrome" -or $title -match "Google Chrome") {
+                $isBrowser = $true
+                $browserType = "Chrome"
+            }
+            # Edge detection
+            elseif ($processName -match "msedge" -or $title -match "Edge" -or $title -match "Microsoft Edge") {
+                $isBrowser = $true
+                $browserType = "Edge"
+            }
+            # Opera detection
+            elseif ($processName -match "opera" -or $title -match "Opera") {
+                $isBrowser = $true
+                $browserType = "Opera"
+            }
+            # Brave detection
+            elseif ($processName -match "brave" -or $title -match "Brave") {
+                $isBrowser = $true
+                $browserType = "Brave"
+            }
+            # Safari detection (if installed on Windows)
+            elseif ($processName -match "safari" -or $title -match "Safari") {
+                $isBrowser = $true
+                $browserType = "Safari"
             }
             
+            # Additional check: if window has substantial size (not a popup or dialog)
             if ($isBrowser) {
                 $rect = New-Object WindowEnumerator+RECT
                 if ([WindowEnumerator]::GetWindowRect($hWnd, [ref]$rect)) {
-                    $processId = 0
-                    [WindowEnumerator]::GetWindowThreadProcessId($hWnd, [ref]$processId)
+                    $width = $rect.Right - $rect.Left
+                    $height = $rect.Bottom - $rect.Top
                     
-                    $process = Get-Process -Id $processId -ErrorAction SilentlyContinue
-                    $processName = if ($process) { $process.ProcessName } else { "Unknown" }
-                    
-                    $window = @{
-                        Handle = $hWnd.ToInt64()
-                        Title = $title
-                        ProcessName = $processName
-                        X = $rect.Left
-                        Y = $rect.Top
-                        Width = $rect.Right - $rect.Left
-                        Height = $rect.Bottom - $rect.Top
+                    # Only consider windows that are large enough to be main browser windows
+                    if ($width -gt 300 -and $height -gt 200) {
+                        $window = @{
+                            Handle = $hWnd.ToInt64()
+                            Title = $title
+                            ProcessName = $processName
+                            BrowserType = $browserType
+                            ProcessId = $processId
+                            X = $rect.Left
+                            Y = $rect.Top
+                            Width = $width
+                            Height = $height
+                        }
+                        
+                        $windows += $window
                     }
-                    
-                    $windows += $window
                 }
             }
         }
@@ -140,7 +194,8 @@ $windows | ConvertTo-Json
             
             console.log(`🌐 Found ${this.browserWindows.length} browser windows:`);
             this.browserWindows.forEach((win, index) => {
-                console.log(`  ${index + 1}. ${win.ProcessName} - ${win.Title.substring(0, 50)}...`);
+                const browserType = win.BrowserType || win.ProcessName;
+                console.log(`  ${index + 1}. ${browserType} (${win.ProcessName}) - ${win.Title.substring(0, 50)}...`);
                 console.log(`     Position: ${win.X}, ${win.Y} Size: ${win.Width}x${win.Height}`);
             });
 
@@ -150,6 +205,167 @@ $windows | ConvertTo-Json
             console.error('❌ Failed to detect browser windows:', error.message);
             return [];
         }
+    }
+    
+    async detectWindowsApplicationsFallback() {
+        try {
+            console.log('📋 Getting browser processes via WMIC...');
+            
+            // Get detailed process information
+            const result = execSync('wmic process where "Name like \'%firefox.exe%\' or Name like \'%chrome.exe%\' or Name like \'%msedge.exe%\' or Name like \'%opera.exe%\' or Name like \'%brave.exe\'" get Name,ProcessId,CommandLine,ExecutablePath /format:csv', {
+                encoding: 'utf8',
+                timeout: 10000
+            });
+            
+            const lines = result.split('\n').filter(line => line.trim() && !line.startsWith('Node'));
+            const processes = [];
+            
+            lines.forEach(line => {
+                const parts = line.split(',');
+                if (parts.length >= 4) {
+                    const commandLine = parts[1] || '';
+                    const executablePath = parts[2] || '';
+                    const name = parts[3] || '';
+                    const processId = parseInt(parts[4]) || 0;
+                    
+                    if (processId > 0 && name) {
+                        // Only get main browser processes
+                        const isMainProcess = this.isMainBrowserProcess(commandLine, name);
+                        
+                        if (isMainProcess) {
+                            processes.push({
+                                ProcessName: name.replace('.exe', ''),
+                                ProcessId: processId,
+                                CommandLine: commandLine,
+                                ExecutablePath: executablePath,
+                                BrowserType: this.getBrowserType(name, executablePath)
+                            });
+                        }
+                    }
+                }
+            });
+            
+            console.log(`✅ Found ${processes.length} main browser processes`);
+            
+            // Get window titles using simple PowerShell
+            const windows = [];
+            try {
+                const psScript = `
+Get-Process | Where-Object { 
+    $_.MainWindowTitle -ne "" -and 
+    ($_.ProcessName -eq "firefox" -or 
+     $_.ProcessName -eq "chrome" -or 
+     $_.ProcessName -eq "msedge" -or 
+     $_.ProcessName -eq "opera" -or 
+     $_.ProcessName -eq "brave") 
+} | ForEach-Object {
+    Write-Host "$($_.Id)|||$($_.ProcessName)|||$($_.MainWindowTitle)"
+}`;
+
+                const titleResult = execSync(`powershell -ExecutionPolicy Bypass -Command "${psScript}"`, {
+                    encoding: 'utf8',
+                    timeout: 5000
+                });
+                
+                const titleLines = titleResult.split('\n').filter(line => line.trim() && line.includes('|||'));
+                
+                titleLines.forEach(line => {
+                    const parts = line.split('|||');
+                    if (parts.length >= 3) {
+                        windows.push({
+                            ProcessId: parseInt(parts[0]),
+                            ProcessName: parts[1].trim(),
+                            Title: parts[2].trim()
+                        });
+                    }
+                });
+                
+            } catch (error) {
+                console.log('⚠️ Window title detection failed, using process names');
+            }
+            
+            // Match processes to windows
+            const browserWindows = [];
+            
+            processes.forEach(process => {
+                const matchingWindow = windows.find(w => w.ProcessId === process.ProcessId);
+                
+                if (matchingWindow) {
+                    browserWindows.push({
+                        Handle: process.ProcessId,
+                        Title: matchingWindow.Title,
+                        ProcessName: process.ProcessName,
+                        BrowserType: process.BrowserType,
+                        ProcessId: process.ProcessId,
+                        X: 100,
+                        Y: 100,
+                        Width: 1200,
+                        Height: 800
+                    });
+                } else {
+                    browserWindows.push({
+                        Handle: process.ProcessId,
+                        Title: `${process.BrowserType} Browser`,
+                        ProcessName: process.ProcessName,
+                        BrowserType: process.BrowserType,
+                        ProcessId: process.ProcessId,
+                        X: 100,
+                        Y: 100,
+                        Width: 1200,
+                        Height: 800
+                    });
+                }
+            });
+            
+            this.browserWindows = browserWindows;
+            
+            console.log(`🌐 Fallback detection found ${this.browserWindows.length} browser windows:`);
+            this.browserWindows.forEach((win, index) => {
+                const browserType = win.BrowserType || win.ProcessName;
+                console.log(`  ${index + 1}. ${browserType} (${win.ProcessName}) - ${win.Title.substring(0, 50)}...`);
+                console.log(`     Process ID: ${win.ProcessId}`);
+            });
+
+            return this.browserWindows;
+            
+        } catch (error) {
+            console.error('❌ Fallback detection also failed:', error.message);
+            return [];
+        }
+    }
+    
+    isMainBrowserProcess(commandLine, processName) {
+        if (!commandLine) return true;
+        
+        const utilityKeywords = [
+            '--type=',
+            '-contentproc',
+            'crashpad-handler',
+            'gpu-process',
+            'utility-sub-type'
+        ];
+        
+        const isUtility = utilityKeywords.some(keyword => commandLine.includes(keyword));
+        return !isUtility;
+    }
+    
+    getBrowserType(processName, executablePath) {
+        const name = processName.toLowerCase();
+        const path = (executablePath || '').toLowerCase();
+        
+        if (name.includes('firefox') || path.includes('firefox')) {
+            return 'Firefox';
+        } else if (name.includes('chrome') || path.includes('chrome')) {
+            return 'Chrome';
+        } else if (name.includes('msedge') || name.includes('edge') || path.includes('edge')) {
+            return 'Edge';
+        } else if (name.includes('opera') || path.includes('opera')) {
+            return 'Opera';
+        } else if (name.includes('brave') || path.includes('brave')) {
+            return 'Brave';
+        }
+        
+        return processName.replace('.exe', '');
     }
 
     async detectMacApplications() {
