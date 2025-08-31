@@ -1,4 +1,4 @@
-// main.js - REAL OCR Casino Detection System - CLEANED UP VERSION
+// main.js - REAL OCR Casino Detection System
 const { app, BrowserWindow, globalShortcut, ipcMain, dialog, Menu, Tray, screen, desktopCapturer } = require('electron');
 const Store = require('electron-store');
 const path = require('path');
@@ -8,6 +8,7 @@ const OCREngine = require('./robust-ocr-engine'); // ROBUST OCR Engine - Fixed a
 const BrowserWindowOCR = require('./browser-window-ocr');
 // const OCREngine = require('./quick-fix-ocr'); // QUICK FIX OCR Engine - WORKING VERSION
 // const OCREngine = require('./ocr-engine'); // Original OCR Engine (has issues)
+
 
 // RESOLUTION FIX: Dynamic screen size detection for your 2560x1440 monitor
 function getDynamicScreenSize() {
@@ -67,7 +68,7 @@ let statsWindow;
 
 // REAL OCR Detection System
 class CasinoDetectionEngine {
-    constructor() {
+        constructor() {
         this.isActive = false;
         this.config = null;
         this.detectionInterval = null;
@@ -1704,7 +1705,8 @@ ipcMain.handle('process-detected-spin', async (event, spinData) => {
   return { success: true };
 });
 
-// Browser Window OCR IPC Handlers - SINGLE SET ONLY
+
+// Browser Window OCR IPC Handlers
 ipcMain.handle('detect-browser-windows', async () => {
     try {
         console.log('🌐 Detecting browser windows...');
@@ -1830,6 +1832,265 @@ ipcMain.handle('test-browser-ocr', async (event, config) => {
         };
     }
 });
+
+
+
+// Browser Window OCR IPC Handlers
+ipcMain.handle('detect-browser-windows', async () => {
+    try {
+        console.log('🌐 Detecting browser windows...');
+        const windows = await detectionEngine.browserOCR.detectBrowserWindows();
+        return { success: true, windows };
+    } catch (error) {
+        console.error('Browser detection error:', error);
+        return { success: false, error: error.message };
+    }
+});
+
+ipcMain.handle('select-browser-window', async (event, windowIndex) => {
+    try {
+        console.log(`🎯 Selecting browser window: ${windowIndex}`);
+        const selectedWindow = detectionEngine.browserOCR.selectBrowserWindow(windowIndex);
+        
+        if (selectedWindow) {
+            detectionEngine.selectedBrowserWindow = selectedWindow;
+            console.log(`✅ Browser window selected: ${selectedWindow.ProcessName} - ${selectedWindow.Title.substring(0, 50)}...`);
+            return { 
+                success: true, 
+                window: {
+                    title: selectedWindow.Title,
+                    processName: selectedWindow.ProcessName,
+                    bounds: {
+                        x: selectedWindow.X,
+                        y: selectedWindow.Y,
+                        width: selectedWindow.Width,
+                        height: selectedWindow.Height
+                    }
+                }
+            };
+        } else {
+            return { success: false, error: 'Invalid window index' };
+        }
+    } catch (error) {
+        console.error('Browser selection error:', error);
+        return { success: false, error: error.message };
+    }
+});
+
+ipcMain.handle('get-selected-browser-info', async () => {
+    try {
+        const info = detectionEngine.browserOCR.getSelectedBrowserInfo();
+        return { success: true, info };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+});
+
+ipcMain.handle('test-browser-ocr', async (event, config) => {
+    try {
+        console.log('🧪 Testing Browser Window OCR with config:', config);
+        
+        if (!detectionEngine.selectedBrowserWindow) {
+            return {
+                success: false,
+                error: 'No browser window selected. Please select a browser window first.',
+                suggestion: 'Click "Select Browser Window" and choose your casino browser'
+            };
+        }
+        
+        let results = {
+            success: true,
+            browserWindow: detectionEngine.selectedBrowserWindow.Title,
+            areasAnalyzed: [],
+            message: `Testing Browser Window OCR on: ${detectionEngine.selectedBrowserWindow.ProcessName}`
+        };
+        
+        // Test each configured area with browser window OCR
+        if (config.areas && Object.keys(config.areas).length > 0) {
+            for (const [areaType, area] of Object.entries(config.areas)) {
+                if (area) {
+                    try {
+                        console.log(`🌐 Testing browser OCR for ${areaType}:`, area);
+                        
+                        const ocrResult = await detectionEngine.browserOCR.analyzeBrowserArea(
+                            area,
+                            areaType, 
+                            detectionEngine.selectedBrowserWindow
+                        );
+                        
+                        results.areasAnalyzed.push({
+                            type: areaType,
+                            value: ocrResult.value.toString(),
+                            confidence: ocrResult.confidence,
+                            text: ocrResult.text,
+                            method: ocrResult.method,
+                            browserWindow: ocrResult.browserWindow,
+                            originalScreenArea: ocrResult.originalScreenArea,
+                            browserRelativeArea: ocrResult.browserRelativeArea
+                        });
+                        
+                        console.log(`✅ Browser OCR test ${areaType}: ${ocrResult.value} (${ocrResult.confidence}% confidence)`);
+                        
+                    } catch (ocrError) {
+                        console.error(`Browser OCR test error for ${areaType}:`, ocrError);
+                        
+                        results.areasAnalyzed.push({
+                            type: areaType,
+                            value: '0.00',
+                            confidence: 0,
+                            text: 'ERROR',
+                            error: ocrError.message,
+                            method: 'BROWSER_OCR_ERROR'
+                        });
+                    }
+                }
+            }
+        } else {
+            results.message = 'No OCR areas configured - configure areas first!';
+        }
+        
+        console.log('✅ Browser OCR test results:', results);
+        return results;
+        
+    } catch (error) {
+        console.error('Browser OCR test error:', error);
+        return {
+            success: false,
+            error: error.message,
+            suggestion: 'Make sure to select a browser window first'
+        };
+    }
+});
+
+
+
+// Browser Window OCR IPC Handlers
+ipcMain.handle('detect-browser-windows', async () => {
+    try {
+        console.log('🌐 Detecting browser windows...');
+        const windows = await detectionEngine.browserOCR.detectBrowserWindows();
+        return { success: true, windows };
+    } catch (error) {
+        console.error('Browser detection error:', error);
+        return { success: false, error: error.message };
+    }
+});
+
+ipcMain.handle('select-browser-window', async (event, windowIndex) => {
+    try {
+        console.log(`🎯 Selecting browser window: ${windowIndex}`);
+        const selectedWindow = detectionEngine.browserOCR.selectBrowserWindow(windowIndex);
+        
+        if (selectedWindow) {
+            detectionEngine.selectedBrowserWindow = selectedWindow;
+            console.log(`✅ Browser window selected: ${selectedWindow.ProcessName} - ${selectedWindow.Title.substring(0, 50)}...`);
+            return { 
+                success: true, 
+                window: {
+                    title: selectedWindow.Title,
+                    processName: selectedWindow.ProcessName,
+                    bounds: {
+                        x: selectedWindow.X,
+                        y: selectedWindow.Y,
+                        width: selectedWindow.Width,
+                        height: selectedWindow.Height
+                    }
+                }
+            };
+        } else {
+            return { success: false, error: 'Invalid window index' };
+        }
+    } catch (error) {
+        console.error('Browser selection error:', error);
+        return { success: false, error: error.message };
+    }
+});
+
+ipcMain.handle('get-selected-browser-info', async () => {
+    try {
+        const info = detectionEngine.browserOCR.getSelectedBrowserInfo();
+        return { success: true, info };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+});
+
+ipcMain.handle('test-browser-ocr', async (event, config) => {
+    try {
+        console.log('🧪 Testing Browser Window OCR with config:', config);
+        
+        if (!detectionEngine.selectedBrowserWindow) {
+            return {
+                success: false,
+                error: 'No browser window selected. Please select a browser window first.',
+                suggestion: 'Click "Select Browser Window" and choose your casino browser'
+            };
+        }
+        
+        let results = {
+            success: true,
+            browserWindow: detectionEngine.selectedBrowserWindow.Title,
+            areasAnalyzed: [],
+            message: `Testing Browser Window OCR on: ${detectionEngine.selectedBrowserWindow.ProcessName}`
+        };
+        
+        // Test each configured area with browser window OCR
+        if (config.areas && Object.keys(config.areas).length > 0) {
+            for (const [areaType, area] of Object.entries(config.areas)) {
+                if (area) {
+                    try {
+                        console.log(`🌐 Testing browser OCR for ${areaType}:`, area);
+                        
+                        const ocrResult = await detectionEngine.browserOCR.analyzeBrowserArea(
+                            area,
+                            areaType, 
+                            detectionEngine.selectedBrowserWindow
+                        );
+                        
+                        results.areasAnalyzed.push({
+                            type: areaType,
+                            value: ocrResult.value.toString(),
+                            confidence: ocrResult.confidence,
+                            text: ocrResult.text,
+                            method: ocrResult.method,
+                            browserWindow: ocrResult.browserWindow,
+                            originalScreenArea: ocrResult.originalScreenArea,
+                            browserRelativeArea: ocrResult.browserRelativeArea
+                        });
+                        
+                        console.log(`✅ Browser OCR test ${areaType}: ${ocrResult.value} (${ocrResult.confidence}% confidence)`);
+                        
+                    } catch (ocrError) {
+                        console.error(`Browser OCR test error for ${areaType}:`, ocrError);
+                        
+                        results.areasAnalyzed.push({
+                            type: areaType,
+                            value: '0.00',
+                            confidence: 0,
+                            text: 'ERROR',
+                            error: ocrError.message,
+                            method: 'BROWSER_OCR_ERROR'
+                        });
+                    }
+                }
+            }
+        } else {
+            results.message = 'No OCR areas configured - configure areas first!';
+        }
+        
+        console.log('✅ Browser OCR test results:', results);
+        return results;
+        
+    } catch (error) {
+        console.error('Browser OCR test error:', error);
+        return {
+            success: false,
+            error: error.message,
+            suggestion: 'Make sure to select a browser window first'
+        };
+    }
+});
+
 
 // Export function
 ipcMain.handle('export-data', async (event, data) => {

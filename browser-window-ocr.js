@@ -247,7 +247,7 @@ $windows | ConvertTo-Json
             
             console.log(`✅ Found ${processes.length} main browser processes`);
             
-            // Get window titles using simple PowerShell
+            // FIXED: Get real window coordinates instead of dummy ones
             const windows = [];
             try {
                 const psScript = `
@@ -259,32 +259,68 @@ Get-Process | Where-Object {
      $_.ProcessName -eq "opera" -or 
      $_.ProcessName -eq "brave") 
 } | ForEach-Object {
-    Write-Host "$($_.Id)|||$($_.ProcessName)|||$($_.MainWindowTitle)"
+    # Get window position using simple Windows API
+    Add-Type -AssemblyName System.Windows.Forms
+    $handle = $_.MainWindowHandle
+    if ($handle -ne [IntPtr]::Zero) {
+        try {
+            # Use Windows Forms to get window rectangle
+            $screen = [System.Windows.Forms.Screen]::FromHandle($handle)
+            $form = [System.Windows.Forms.Form]::FromHandle($handle)
+            if ($form -ne $null) {
+                Write-Host "$($_.Id)|||$($_.ProcessName)|||$($_.MainWindowTitle)|||$($form.Left)|||$($form.Top)|||$($form.Width)|||$($form.Height)"
+            } else {
+                # Fallback: estimate based on screen size
+                $bounds = $screen.WorkingArea
+                Write-Host "$($_.Id)|||$($_.ProcessName)|||$($_.MainWindowTitle)|||100|||100|||$($bounds.Width-200)|||$($bounds.Height-200)"
+            }
+        } catch {
+            # Ultimate fallback: use screen dimensions
+            Write-Host "$($_.Id)|||$($_.ProcessName)|||$($_.MainWindowTitle)|||0|||0|||1920|||1080"
+        }
+    }
 }`;
 
                 const titleResult = execSync(`powershell -ExecutionPolicy Bypass -Command "${psScript}"`, {
                     encoding: 'utf8',
-                    timeout: 5000
+                    timeout: 8000
                 });
                 
                 const titleLines = titleResult.split('\n').filter(line => line.trim() && line.includes('|||'));
                 
                 titleLines.forEach(line => {
                     const parts = line.split('|||');
-                    if (parts.length >= 3) {
+                    if (parts.length >= 7) {
                         windows.push({
                             ProcessId: parseInt(parts[0]),
                             ProcessName: parts[1].trim(),
-                            Title: parts[2].trim()
+                            Title: parts[2].trim(),
+                            X: parseInt(parts[3]) || 0,
+                            Y: parseInt(parts[4]) || 0,
+                            Width: parseInt(parts[5]) || 1200,
+                            Height: parseInt(parts[6]) || 800
                         });
                     }
                 });
                 
             } catch (error) {
-                console.log('⚠️ Window title detection failed, using process names');
+                console.log('⚠️ Window position detection failed, using screen-based fallback');
+                
+                // Ultimate fallback: use process info only with full screen coordinates
+                processes.forEach(process => {
+                    windows.push({
+                        ProcessId: process.ProcessId,
+                        ProcessName: process.ProcessName,
+                        Title: `${process.BrowserType} Browser`,
+                        X: 0,
+                        Y: 0,
+                        Width: 1920,
+                        Height: 1080
+                    });
+                });
             }
             
-            // Match processes to windows
+            // Match processes to windows with real coordinates
             const browserWindows = [];
             
             processes.forEach(process => {
@@ -297,22 +333,23 @@ Get-Process | Where-Object {
                         ProcessName: process.ProcessName,
                         BrowserType: process.BrowserType,
                         ProcessId: process.ProcessId,
-                        X: 100,
-                        Y: 100,
-                        Width: 1200,
-                        Height: 800
+                        X: matchingWindow.X,
+                        Y: matchingWindow.Y,
+                        Width: matchingWindow.Width,
+                        Height: matchingWindow.Height
                     });
                 } else {
+                    // Fallback with full screen coordinates
                     browserWindows.push({
                         Handle: process.ProcessId,
                         Title: `${process.BrowserType} Browser`,
                         ProcessName: process.ProcessName,
                         BrowserType: process.BrowserType,
                         ProcessId: process.ProcessId,
-                        X: 100,
-                        Y: 100,
-                        Width: 1200,
-                        Height: 800
+                        X: 0,
+                        Y: 0,
+                        Width: 1920,
+                        Height: 1080
                     });
                 }
             });
@@ -476,6 +513,18 @@ end tell
     }
 
     async captureWindowsWindow(browserWindow) {
+        console.log(`📸 Attempting browser window capture: ${browserWindow.ProcessName}`);
+        
+        // Try primary method first, then fallback
+        try {
+            return await this.captureWindowsWindowPrimary(browserWindow);
+        } catch (error) {
+            console.log(`⚠️ Primary capture failed, using fallback: ${error.message}`);
+            return await this.captureWindowsWindowFallback(browserWindow);
+        }
+    }
+    
+    async captureWindowsWindowPrimary(browserWindow) {
         return new Promise((resolve, reject) => {
             const timestamp = Date.now();
             const tempPath = path.join(this.debugDir, `browser-capture-${timestamp}.png`);
@@ -608,6 +657,195 @@ try {
             }, 15000);
         });
     }
+    
+    async captureWindowsWindowFallback(browserWindow) {
+        console.log('🔄 Using fallback browser window capture (no .NET Framework required)...');
+        
+        return new Promise((resolve, reject) => {
+            const timestamp = Date.now();
+            const tempPath = path.join(this.debugDir, `browser-capture-fallback-${timestamp}.png`);
+            
+            // FIXED: Simplified fallback without problematic System.Drawing.Imaging
+            const fallbackScript = `
+try {
+    # Use basic assemblies that are always available
+    Add-Type -AssemblyName System.Drawing
+    Add-Type -AssemblyName System.Windows.Forms
+    
+    # Capture screen region where browser window should be
+    $bounds = New-Object System.Drawing.Rectangle ${browserWindow.X}, ${browserWindow.Y}, ${browserWindow.Width}, ${browserWindow.Height}
+    $bitmap = New-Object System.Drawing.Bitmap $bounds.Width, $bounds.Height
+    $graphics = [System.Drawing.Graphics]::FromImage($bitmap)
+    
+    # Capture the screen region
+    $graphics.CopyFromScreen($bounds.Location, [System.Drawing.Point]::Empty, $bounds.Size)
+    
+    # Save using basic PNG format (no Imaging namespace needed)
+    $bitmap.Save('${tempPath.replace(/\\/g, '\\\\')}', 'Png')
+    
+    # Get file info
+    if (Test-Path '${tempPath.replace(/\\/g, '\\\\')}') {
+        $fileInfo = Get-Item '${tempPath.replace(/\\/g, '\\\\')}'
+        Write-Host "FALLBACK_SUCCESS:$($fileInfo.Length):$($bitmap.Width)x$($bitmap.Height)"
+    } else {
+        Write-Host "FALLBACK_ERROR:File not created"
+    }
+    
+    # Cleanup
+    $graphics.Dispose()
+    $bitmap.Dispose()
+} catch {
+    Write-Host "FALLBACK_ERROR:$($_.Exception.Message)"
+    exit 1
+}
+`;
+
+            const psProcess = spawn('powershell', [
+                '-WindowStyle', 'Hidden',
+                '-ExecutionPolicy', 'Bypass',
+                '-Command', fallbackScript
+            ], {
+                windowsHide: true,
+                stdio: ['ignore', 'pipe', 'pipe']
+            });
+
+            let output = '';
+            
+            psProcess.stdout.on('data', (data) => {
+                output += data.toString();
+            });
+
+            psProcess.stderr.on('data', (data) => {
+                console.error('Fallback PowerShell stderr:', data.toString());
+            });
+
+            psProcess.on('close', async (code) => {
+                try {
+                    if (code === 0 && output.includes('FALLBACK_SUCCESS:')) {
+                        if (fs.existsSync(tempPath)) {
+                            const buffer = fs.readFileSync(tempPath);
+                            
+                            // Clean up temp file
+                            try { fs.unlinkSync(tempPath); } catch(e) {}
+                            
+                            console.log(`✅ Fallback browser capture successful: ${buffer.length} bytes`);
+                            
+                            resolve({
+                                success: true,
+                                buffer: buffer,
+                                window: browserWindow,
+                                method: 'windows-fallback-screen-region'
+                            });
+                        } else {
+                            reject(new Error('Fallback capture file not created'));
+                        }
+                    } else {
+                        // Try even simpler fallback: just capture full screen
+                        console.log('🔄 Trying ultra-simple screen capture...');
+                        this.captureScreenRegionSimple(browserWindow).then(resolve).catch(reject);
+                    }
+                } catch (error) {
+                    reject(error);
+                }
+            });
+
+            psProcess.on('error', (error) => {
+                reject(new Error(`Fallback capture process error: ${error.message}`));
+            });
+
+            setTimeout(() => {
+                psProcess.kill();
+                reject(new Error('Fallback browser capture timeout'));
+            }, 10000);
+        });
+    }
+    
+    async captureScreenRegionSimple(browserWindow) {
+        console.log('📷 Using ultra-simple screen region capture...');
+        
+        return new Promise((resolve, reject) => {
+            // Ultra-simple: use Windows Snipping Tool API or similar
+            const simpleScript = `
+try {
+    # Load required assemblies
+    Add-Type -AssemblyName System.Drawing
+    Add-Type -AssemblyName System.Windows.Forms
+    
+    # Create bitmap of screen region
+    $screenBounds = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
+    $bitmap = New-Object System.Drawing.Bitmap ${browserWindow.Width}, ${browserWindow.Height}
+    $graphics = [System.Drawing.Graphics]::FromImage($bitmap)
+    
+    # Capture screen area (fallback to full screen if window coords fail)
+    $captureX = [Math]::Max(0, [Math]::Min(${browserWindow.X}, $screenBounds.Width - ${browserWindow.Width}))
+    $captureY = [Math]::Max(0, [Math]::Min(${browserWindow.Y}, $screenBounds.Height - ${browserWindow.Height}))
+    
+    $graphics.CopyFromScreen($captureX, $captureY, 0, 0, $bitmap.Size)
+    
+    # Convert to base64 for transmission
+    $ms = New-Object System.IO.MemoryStream
+    $bitmap.Save($ms, [System.Drawing.Imaging.ImageFormat]::Png)
+    $bytes = $ms.ToArray()
+    $base64 = [Convert]::ToBase64String($bytes)
+    
+    Write-Host "SIMPLE_SUCCESS:$($bytes.Length):$($bitmap.Width)x$($bitmap.Height):$base64"
+    
+    $ms.Dispose()
+    $graphics.Dispose()
+    $bitmap.Dispose()
+} catch {
+    Write-Host "SIMPLE_ERROR:$($_.Exception.Message)"
+}
+`;
+
+            const psProcess = spawn('powershell', [
+                '-WindowStyle', 'Hidden',
+                '-ExecutionPolicy', 'Bypass',
+                '-Command', simpleScript
+            ], {
+                windowsHide: true,
+                stdio: ['ignore', 'pipe', 'pipe']
+            });
+
+            let output = '';
+            
+            psProcess.stdout.on('data', (data) => {
+                output += data.toString();
+            });
+
+            psProcess.on('close', (code) => {
+                try {
+                    if (output.includes('SIMPLE_SUCCESS:')) {
+                        const parts = output.split(':');
+                        if (parts.length >= 4) {
+                            const base64Data = parts.slice(3).join(':');
+                            const buffer = Buffer.from(base64Data, 'base64');
+                            
+                            console.log(`✅ Ultra-simple capture successful: ${buffer.length} bytes`);
+                            
+                            resolve({
+                                success: true,
+                                buffer: buffer,
+                                window: browserWindow,
+                                method: 'windows-simple-screen-region'
+                            });
+                        } else {
+                            reject(new Error('Invalid simple capture response format'));
+                        }
+                    } else {
+                        reject(new Error(`Simple screen capture failed: ${output}`));
+                    }
+                } catch (error) {
+                    reject(new Error(`Simple capture parsing error: ${error.message}`));
+                }
+            });
+
+            setTimeout(() => {
+                psProcess.kill();
+                reject(new Error('Simple capture timeout'));
+            }, 5000);
+        });
+    }
 
     // Convert screen coordinates to browser-window-relative coordinates
     convertScreenToBrowserCoords(screenArea, browserWindow) {
@@ -656,20 +894,29 @@ try {
             // Convert screen coordinates to browser-relative coordinates
             const browserArea = this.convertScreenToBrowserCoords(screenArea, browserWindow);
             
-            // Validate browser-relative coordinates
+            // Validate browser-relative coordinates and fix negative dimensions
             if (browserArea.x < 0 || browserArea.y < 0 || 
                 browserArea.x + browserArea.width > browserWindow.Width ||
                 browserArea.y + browserArea.height > browserWindow.Height) {
                 
-                console.warn('⚠️ Area coordinates are outside browser window bounds');
+                console.warn('⚠️ Area coordinates are outside browser window bounds - fixing...');
                 
-                // Clamp to browser window bounds
-                browserArea.x = Math.max(0, browserArea.x);
-                browserArea.y = Math.max(0, browserArea.y);
-                browserArea.width = Math.min(browserArea.width, browserWindow.Width - browserArea.x);
-                browserArea.height = Math.min(browserArea.height, browserWindow.Height - browserArea.y);
+                // FIXED: Proper coordinate clamping to prevent negative values
+                const maxX = Math.max(0, browserWindow.Width - 50);  // Ensure at least 50px width
+                const maxY = Math.max(0, browserWindow.Height - 50); // Ensure at least 50px height
                 
-                console.log(`🔧 Clamped area: ${browserArea.x}, ${browserArea.y} ${browserArea.width}x${browserArea.height}`);
+                browserArea.x = Math.max(0, Math.min(browserArea.x, maxX));
+                browserArea.y = Math.max(0, Math.min(browserArea.y, maxY));
+                
+                // Calculate maximum possible dimensions from the clamped position
+                const maxWidth = browserWindow.Width - browserArea.x;
+                const maxHeight = browserWindow.Height - browserArea.y;
+                
+                // Ensure positive dimensions with minimum size of 50x20
+                browserArea.width = Math.max(50, Math.min(browserArea.width, maxWidth));
+                browserArea.height = Math.max(20, Math.min(browserArea.height, maxHeight));
+                
+                console.log(`🔧 Fixed area: ${browserArea.x}, ${browserArea.y} ${browserArea.width}x${browserArea.height}`);
             }
 
             // Extract the specific area from browser capture
