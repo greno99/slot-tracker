@@ -55,7 +55,7 @@ class EnhancedScreenshotCapture {
             
             const sources = await desktopCapturer.getSources({
                 types: ['screen'],
-                thumbnailSize: { width: 1920, height: 1080 }
+                thumbnailSize: this.captureResolution || { width: 1920, height: 1080 }
             });
 
             if (sources.length > 0) {

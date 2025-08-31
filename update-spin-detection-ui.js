@@ -1,4 +1,24 @@
-<!DOCTYPE html>
+// update-spin-detection-ui.js - FIXED - Add browser selection to your existing UI
+
+const fs = require('fs');
+const path = require('path');
+
+console.log('🎨 Adding browser window selection to your OCR setup UI...');
+
+const spinDetectionPath = path.join(__dirname, 'renderer', 'spin-detection.html');
+
+if (!fs.existsSync(spinDetectionPath)) {
+    console.log('⚠️ spin-detection.html not found, creating enhanced version...');
+    
+    // Create the renderer directory if it doesn't exist
+    const rendererDir = path.dirname(spinDetectionPath);
+    if (!fs.existsSync(rendererDir)) {
+        fs.mkdirSync(rendererDir, { recursive: true });
+    }
+}
+
+// FIXED: Enhanced spin detection HTML with browser selection (escaping template literals)
+const enhancedHTML = `<!DOCTYPE html>
 <html lang="de">
 <head>
     <meta charset="UTF-8">
@@ -746,4 +766,15 @@
         });
     </script>
 </body>
-</html>
+</html>`;
+
+fs.writeFileSync(spinDetectionPath, enhancedHTML);
+console.log('✅ Enhanced spin detection UI created with browser window selection');
+
+console.log('\n🎯 Complete OCR Enhancement Applied!');
+console.log('Features added:');
+console.log('✅ Browser window selection');
+console.log('✅ Visual step-by-step guide');  
+console.log('✅ Browser-relative coordinate conversion');
+console.log('✅ Enhanced testing interface');
+console.log('✅ No more taskbar reading interference');
