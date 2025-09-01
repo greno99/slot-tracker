@@ -7,34 +7,8 @@ const sharp = require('sharp');
 
 class EnhancedScreenshotCapture {
     constructor() {
-        this.captureMethod = 'electron';
+        this.captureMethod = 'electron'; // electron, powershell, python
         this.lastSuccessfulMethod = null;
-        
-        
-        // RESOLUTION FIX: Detect native resolution for your 2560x1440 monitor
-        const { screen } = require('electron');
-        const primaryDisplay = screen.getPrimaryDisplay();
-        const { width, height, scaleFactor } = primaryDisplay.bounds;
-        
-        console.log(`📺 Detected native resolution: ${width}x${height}, DPI scale: ${scaleFactor}`);
-        
-        if (width >= 2560 || height >= 1440) {
-            this.captureResolution = { width, height };
-            this.coordinateScale = { x: 1, y: 1 };
-            this.dpiScale = scaleFactor;
-            console.log('🎯 Using native resolution for capture');
-        } else {
-            this.captureResolution = { width: 1920, height: 1080 };
-            this.coordinateScale = { x: 1920 / width, y: 1080 / height };
-            this.dpiScale = scaleFactor;
-            console.log(`📏 Using 1920x1080 with scaling: ${this.coordinateScale.x.toFixed(3)}x${this.coordinateScale.y.toFixed(3)}`);
-        }
-        
-        // DPI-Korrektur für Windows High-DPI Displays
-        if (scaleFactor > 1.0) {
-            console.log(`🔧 DPI-Skalierung erkannt: ${scaleFactor} - Koordinaten werden entsprechend angepasst`);
-        }
-
     }
 
     async captureScreen(retryCount = 3) {
@@ -361,39 +335,6 @@ except Exception as e:
             console.error('Area extraction error:', extractError);
             throw new Error(`Area extraction failed: ${extractError.message}`);
         }
-    }
-
-    
-    // NEUE: Präzise Koordinaten-Korrektur
-    correctCoordinatesForCapture(area) {
-        if (!this.coordinateScale || !this.dpiScale) {
-            console.warn('⚠️ Koordinaten-Korrektur nicht initialisiert - verwende Original-Koordinaten');
-            return area;
-        }
-        
-        let corrected = { ...area };
-        
-        // 1. DPI-Skalierung korrigieren
-        if (this.dpiScale !== 1.0) {
-            corrected.x = Math.floor(corrected.x / this.dpiScale);
-            corrected.y = Math.floor(corrected.y / this.dpiScale);
-            corrected.width = Math.floor(corrected.width / this.dpiScale);
-            corrected.height = Math.floor(corrected.height / this.dpiScale);
-            
-            console.log(`🔧 DPI-Korrektur (${this.dpiScale}): ${JSON.stringify(area)} → ${JSON.stringify(corrected)}`);
-        }
-        
-        // 2. Screenshot-Skalierung anwenden (falls nötig)
-        if (this.coordinateScale.x !== 1 || this.coordinateScale.y !== 1) {
-            corrected.x = Math.floor(corrected.x * this.coordinateScale.x);
-            corrected.y = Math.floor(corrected.y * this.coordinateScale.y);
-            corrected.width = Math.floor(corrected.width * this.coordinateScale.x);
-            corrected.height = Math.floor(corrected.height * this.coordinateScale.y);
-            
-            console.log(`📏 Auflösungs-Skalierung (${this.coordinateScale.x.toFixed(3)}, ${this.coordinateScale.y.toFixed(3)}): → ${JSON.stringify(corrected)}`);
-        }
-        
-        return corrected;
     }
 }
 
