@@ -459,3 +459,60 @@ body {
     padding: 2px;
     margin: -2px;
 }
+
+/* ==== EDIT MODE STYLES ==== */
+.spin-item.edit-mode {
+    position: relative;
+    padding-right: 60px;
+}
+
+.spin-edit-buttons {
+    position: absolute;
+    right: 5px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    gap: 3px;
+}
+
+.spin-edit-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 3px;
+    width: 24px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 10px;
+    transition: all 0.2s ease;
+    color: white;
+}
+
+.edit-btn:hover {
+    background: rgba(0, 123, 255, 0.3);
+    border-color: #007bff;
+    transform: scale(1.1);
+}
+
+.delete-btn:hover {
+    background: rgba(220, 53, 69, 0.3);
+    border-color: #dc3545;
+    transform: scale(1.1);
+}
+
+.edit-mode-info {
+    text-align: center;
+    margin-top: 8px;
+    opacity: 0.7;
+    font-size: 9px;
+    color: rgba(255, 255, 255, 0.6);
+    font-style: italic;
+}
+
+.btn-active {
+    background: rgba(0, 255, 0, 0.2) !important;
+    border-color: #28a745 !important;
+    box-shadow: 0 0 8px rgba(40, 167, 69, 0.4);
+}

@@ -21,6 +21,69 @@
         </div>
         
         <div id="statsContent" style="display: none;">
+            <!-- Session Management Controls -->
+            <div class="session-controls">
+                <div class="control-group">
+                    <h3>🗑️ Session Management</h3>
+                    <div class="bulk-actions">
+                        <button class="danger-btn" id="deleteTestSessions">
+                            🧪 Test Sessions löschen
+                        </button>
+                        <button class="danger-btn" id="deleteWrongBets">
+                            ⚠️ Sessions mit falschen Einsätzen löschen
+                        </button>
+                        <button class="danger-btn" id="deleteZeroWinSessions">
+                            💸 Sessions ohne Gewinne löschen
+                        </button>
+                        <button class="danger-btn" id="deleteSelectedSessions">
+                            ❌ Ausgewählte Sessions löschen (<span id="selectedCount">0</span>)
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <h3>🔍 Filter</h3>
+                    <div class="filter-controls">
+                        <select id="gameFilter">
+                            <option value="">Alle Spiele</option>
+                        </select>
+                        <select id="profitFilter">
+                            <option value="">Alle Sessions</option>
+                            <option value="profit">Nur Gewinn-Sessions</option>
+                            <option value="loss">Nur Verlust-Sessions</option>
+                        </select>
+                        <select id="rtpFilter">
+                            <option value="">Alle RTP</option>
+                            <option value="high">Hohe RTP (>95%)</option>
+                            <option value="medium">Mittlere RTP (85-95%)</option>
+                            <option value="low">Niedrige RTP (<85%)</option>
+                        </select>
+                        <button class="secondary-btn" id="clearFilters">Filter zurücksetzen</button>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <h3>⚙️ Einstellungen</h3>
+                    <div class="settings-controls">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="suspiciousBets" />
+                            <span class="checkmark"></span>
+                            Verdächtige Einsätze markieren (>€20 oder Dezimalkomma-Fehler)
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="showCurrentSession" checked />
+                            <span class="checkmark"></span>
+                            Laufende Session anzeigen
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="confirmDeletes" checked />
+                            <span class="checkmark"></span>
+                            Löschvorgänge bestätigen
+                        </label>
+                    </div>
+                </div>
+            </div>
+            
             <!-- Overview Cards -->
             <div class="stats-grid">
                 <div class="stat-card">
@@ -63,27 +126,66 @@
             
             <!-- Sessions Table -->
             <div class="sessions-table">
-                <div class="chart-title">Session Details</div>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Datum</th>
-                            <th>Spiel</th>
-                            <th>Dauer</th>
-                            <th>Spins</th>
-                            <th>Einsatz</th>
-                            <th>Gewinn</th>
-                            <th>Profit</th>
-                            <th>RTP</th>
-                        </tr>
-                    </thead>
-                    <tbody id="sessionsTableBody">
-                    </tbody>
-                </table>
+                <div class="table-header">
+                    <div class="chart-title">Session Details</div>
+                    <div class="table-actions">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="selectAllSessions" />
+                            <span class="checkmark"></span>
+                            Alle auswählen
+                        </label>
+                        <span class="session-count">Zeige <span id="visibleSessionsCount">0</span> von <span id="totalSessionsCount">0</span> Sessions</span>
+                    </div>
+                </div>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th></th>
+                                <th>Datum</th>
+                                <th>Spiel</th>
+                                <th>Dauer</th>
+                                <th>Spins</th>
+                                <th>Einsatz</th>
+                                <th>Gewinn</th>
+                                <th>Profit</th>
+                                <th>RTP</th>
+                                <th>Aktionen</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sessionsTableBody">
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
-    
-    
+
+    <!-- Confirmation Modal -->
+    <div id="confirmModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="confirmTitle">Aktion bestätigen</h3>
+            </div>
+            <div class="modal-body">
+                <p id="confirmMessage">Sind Sie sicher?</p>
+                <div id="confirmDetails" class="confirm-details"></div>
+            </div>
+            <div class="modal-actions">
+                <button class="secondary-btn" id="confirmCancel">Abbrechen</button>
+                <button class="danger-btn" id="confirmDelete">Löschen</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="notification" class="notification" style="display: none;">
+        <div class="notification-content">
+            <span id="notificationMessage">Nachricht</span>
+            <button id="closeNotification">×</button>
+        </div>
+    </div>
+
+    <script src="stats.js"></script>
 </body>
 </html>

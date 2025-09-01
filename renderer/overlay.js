@@ -9,6 +9,7 @@ class ElectronCasinoTracker {
         this.isMinimized = false;
         this.lastBetAmount = 1.00; // Track last bet amount
         this.autoDetectActive = false; // For auto-detect functionality
+        this.editMode = false; // NEW: Edit mode for spins
         
         this.sessionData = {
             spins: 0,
@@ -127,7 +128,7 @@ class ElectronCasinoTracker {
                 e.preventDefault();
                 e.stopPropagation();
                 
-                const step = input === betInput ? 0.10 : 0.50; // Different steps for bet vs win
+                const step = input === betInput ? 0.05 : 0.05; // Different steps for bet vs win
                 const currentValue = parseFloat(input.value) || 0;
                 
                 if (e.deltaY < 0) {
@@ -143,7 +144,7 @@ class ElectronCasinoTracker {
             });
             
             input.addEventListener('focus', () => {
-                const stepText = input === betInput ? '€0.10' : '€0.50';
+                const stepText = input === betInput ? '€0.05' : '€0.05';
                 this.showNotification(`Mausrad verwenden (Schritte: ${stepText})`, 'info');
             });
         });
@@ -601,34 +602,7 @@ class ElectronCasinoTracker {
     }
     
     updateSpinsHistory() {
-        const container = document.getElementById('lastSpins');
-        container.innerHTML = '';
-        
-        const recentSpins = this.sessionData.spinsHistory.slice(-10).reverse();
-        
-        recentSpins.forEach(spin => {
-            const div = document.createElement('div');
-            div.className = 'spin-item';
-            
-            const time = new Date(spin.time).toLocaleTimeString('de-DE', { 
-                hour: '2-digit', 
-                minute: '2-digit' 
-            });
-            
-            const multiplier = spin.bet > 0 ? (spin.win / spin.bet) : 0;
-            const multiplierClass = multiplier >= 1 ? 'profit-positive' : 'profit-negative';
-            
-            div.innerHTML = `
-                <span class="spin-time">${time}</span>
-                <div class="spin-amounts">
-                    <span>€${spin.bet.toFixed(2)}</span>
-                    <span class="${multiplierClass}">€${spin.win.toFixed(2)}</span>
-                    <span class="${multiplierClass}">${multiplier.toFixed(1)}x</span>
-                </div>
-            `;
-            
-            container.appendChild(div);
-        });
+        this.updateSpinsHistoryWithEdit();
     }
     
     startTimers() {
@@ -727,6 +701,212 @@ class ElectronCasinoTracker {
         }
     }
     
+    
+    // ===== SPIN EDIT & DELETE FUNCTIONALITY =====
+    
+    toggleEditMode() {
+        this.editMode = !this.editMode;
+        const btn = document.getElementById('editModeBtn');
+        const modeIndicator = document.getElementById('editModeIndicator');
+        
+        if (this.editMode) {
+            btn.textContent = '✅ Edit Mode';
+            btn.classList.add('btn-active');
+            if (modeIndicator) {
+                modeIndicator.style.display = 'block';
+                modeIndicator.textContent = '✏️ Edit Mode Active';
+            }
+            this.showNotification('Edit Mode aktiviert - Klicke auf Spins zum Bearbeiten', 'info');
+        } else {
+            btn.textContent = '✏️ Edit Spins';
+            btn.classList.remove('btn-active');
+            if (modeIndicator) {
+                modeIndicator.style.display = 'none';
+            }
+            this.showNotification('Edit Mode deaktiviert', 'info');
+        }
+        
+        // Update the spins display
+        this.updateSpinsHistory();
+    }
+    
+    editSpin(spinIndex) {
+        if (spinIndex >= this.sessionData.spinsHistory.length) {
+            this.showNotification('Spin nicht gefunden!', 'error');
+            return;
+        }
+        
+        const spin = this.sessionData.spinsHistory[spinIndex];
+        const time = new Date(spin.time).toLocaleTimeString('de-DE', { 
+            hour: '2-digit', 
+            minute: '2-digit' 
+        });
+        
+        // Create edit dialog
+        const newBet = prompt(
+            `Spin bearbeiten (${time}):\n\nNeuer Einsatz:`, 
+            spin.bet.toFixed(2)
+        );
+        
+        if (newBet === null) return; // User cancelled
+        
+        const newWin = prompt(
+            `Spin bearbeiten (${time}):\n\nNeuer Gewinn:`, 
+            spin.win.toFixed(2)
+        );
+        
+        if (newWin === null) return; // User cancelled
+        
+        // Validate input
+        const betAmount = parseFloat(newBet);
+        const winAmount = parseFloat(newWin);
+        
+        if (isNaN(betAmount) || betAmount < 0) {
+            this.showNotification('Ungültiger Einsatz!', 'error');
+            return;
+        }
+        
+        if (isNaN(winAmount) || winAmount < 0) {
+            this.showNotification('Ungültiger Gewinn!', 'error');
+            return;
+        }
+        
+        // Update spin and recalculate totals
+        this.updateSpin(spinIndex, betAmount, winAmount);
+    }
+    
+    updateSpin(spinIndex, newBet, newWin) {
+        const oldSpin = this.sessionData.spinsHistory[spinIndex];
+        
+        // Subtract old values from totals
+        this.sessionData.totalBet -= oldSpin.bet;
+        this.sessionData.totalWin -= oldSpin.win;
+        
+        // Update the spin
+        oldSpin.bet = newBet;
+        oldSpin.win = newWin;
+        
+        // Add new values to totals
+        this.sessionData.totalBet += newBet;
+        this.sessionData.totalWin += newWin;
+        
+        // Recalculate best win
+        this.recalculateBestWin();
+        
+        // Update UI and save
+        this.updateUI();
+        this.saveData();
+        
+        this.showNotification(`Spin aktualisiert: €${newBet.toFixed(2)} → €${newWin.toFixed(2)}`, 'success');
+    }
+    
+    deleteSpin(spinIndex) {
+        if (spinIndex >= this.sessionData.spinsHistory.length) {
+            this.showNotification('Spin nicht gefunden!', 'error');
+            return;
+        }
+        
+        const spin = this.sessionData.spinsHistory[spinIndex];
+        const time = new Date(spin.time).toLocaleTimeString('de-DE', { 
+            hour: '2-digit', 
+            minute: '2-digit' 
+        });
+        
+        const confirmed = confirm(
+            `Spin löschen (${time})?\n\nEinsatz: €${spin.bet.toFixed(2)}\nGewinn: €${spin.win.toFixed(2)}\n\nDies kann nicht rückgängig gemacht werden!`
+        );
+        
+        if (!confirmed) return;
+        
+        // Remove spin from history
+        this.sessionData.spinsHistory.splice(spinIndex, 1);
+        
+        // Update totals
+        this.sessionData.spins--;
+        this.sessionData.totalBet -= spin.bet;
+        this.sessionData.totalWin -= spin.win;
+        
+        // Recalculate best win
+        this.recalculateBestWin();
+        
+        // Update UI and save
+        this.updateUI();
+        this.saveData();
+        
+        this.showNotification(`Spin gelöscht (${time}): €${spin.bet.toFixed(2)} → €${spin.win.toFixed(2)}`, 'success');
+    }
+    
+    recalculateBestWin() {
+        this.sessionData.bestWin = 0;
+        this.sessionData.spinsHistory.forEach(spin => {
+            if (spin.win > this.sessionData.bestWin) {
+                this.sessionData.bestWin = spin.win;
+            }
+        });
+    }
+    
+    // Enhanced version of updateSpinsHistory with edit buttons
+    updateSpinsHistoryWithEdit() {
+        const container = document.getElementById('lastSpins');
+        container.innerHTML = '';
+        
+        // Show more spins when in edit mode
+        const maxSpins = this.editMode ? 20 : 10;
+        const recentSpins = this.sessionData.spinsHistory.slice(-maxSpins).reverse();
+        
+        recentSpins.forEach((spin, displayIndex) => {
+            // Calculate actual index in the array (since we reversed it)
+            const actualIndex = this.sessionData.spinsHistory.length - 1 - displayIndex;
+            
+            const div = document.createElement('div');
+            div.className = 'spin-item' + (this.editMode ? ' edit-mode' : '');
+            
+            const time = new Date(spin.time).toLocaleTimeString('de-DE', { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            });
+            
+            const multiplier = spin.bet > 0 ? (spin.win / spin.bet) : 0;
+            const multiplierClass = multiplier >= 1 ? 'profit-positive' : 'profit-negative';
+            
+            let spinContent = `
+                <span class="spin-time">${time}</span>
+                <div class="spin-amounts">
+                    <span>€${spin.bet.toFixed(2)}</span>
+                    <span class="${multiplierClass}">€${spin.win.toFixed(2)}</span>
+                    <span class="${multiplierClass}">${multiplier.toFixed(1)}x</span>
+                </div>
+            `;
+            
+            // Add edit buttons if in edit mode
+            if (this.editMode) {
+                spinContent += `
+                    <div class="spin-edit-buttons">
+                        <button class="spin-edit-btn edit-btn" onclick="tracker.editSpin(${actualIndex})" title="Bearbeiten">
+                            ✏️
+                        </button>
+                        <button class="spin-edit-btn delete-btn" onclick="tracker.deleteSpin(${actualIndex})" title="Löschen">
+                            🗑️
+                        </button>
+                    </div>
+                `;
+            }
+            
+            div.innerHTML = spinContent;
+            container.appendChild(div);
+        });
+        
+        // Add edit mode info if active
+        if (this.editMode && recentSpins.length > 0) {
+            const infoDiv = document.createElement('div');
+            infoDiv.className = 'edit-mode-info';
+            infoDiv.innerHTML = `
+                <small>✏️ Edit Mode: Zeige ${recentSpins.length} Spins • Klicke ✏️ zum Bearbeiten oder 🗑️ zum Löschen</small>
+            `;
+            container.appendChild(infoDiv);
+        }
+    }
+
     calculateStats(sessions) {
         const totalProfit = sessions.reduce((sum, s) => sum + s.profit, 0);
         const totalBet = sessions.reduce((sum, s) => sum + s.totalBet, 0);
@@ -824,3 +1004,57 @@ inputs.forEach(input => {
         ipcRenderer.send('overlay-focus-input', false);
     });
 });
+
+// ===== BETTER F1 FIX (Non-Intrusive) =====
+// Only fixes F1 issue without interfering with normal typing
+
+function setupBetterF1Fix() {
+    console.log('🎯 Setting up better F1 fix (non-intrusive)...');
+    
+    // Global F1 handler that works even when input is focused
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'F1') {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            console.log('⚡ F1 pressed - executing quick spin');
+            
+            // Only blur if F1 is pressed, don't auto-blur during typing
+            const focusedElement = document.activeElement;
+            if (focusedElement && focusedElement.tagName === 'INPUT') {
+                focusedElement.blur();
+                console.log('🚀 F1: Released input focus for quick spin');
+            }
+            
+            // Execute F1 action
+            if (typeof tracker !== 'undefined' && tracker.isTracking && !tracker.isPaused) {
+                tracker.addQuickSpin();
+                console.log('✅ F1 Quick Spin executed');
+            }
+            
+            return false;
+        }
+    }, true);
+    
+    // Only auto-blur on Enter key (when user is done typing)
+    const inputs = document.querySelectorAll('input');
+    inputs.forEach(input => {
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                setTimeout(() => {
+                    input.blur();
+                    console.log('✅ Auto-blur after Enter in', input.id || 'input');
+                }, 100);
+            }
+        });
+    });
+    
+    console.log('✅ Better F1 fix activated - no more typing interruptions!');
+}
+
+// Activate when DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setupBetterF1Fix);
+} else {
+    setupBetterF1Fix();
+}
