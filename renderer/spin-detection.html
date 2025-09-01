@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🎯 Enhanced OCR Setup - Manuelle Koordinaten-Eingabe</title>
+    <title>🎯 Complete OCR Setup - Browser + Manual Coordinates</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -30,16 +30,7 @@
             border-bottom: 2px solid #eee;
         }
         
-        .problem-banner {
-            background: linear-gradient(135deg, #ff6b6b, #feca57);
-            color: white;
-            padding: 20px;
-            border-radius: 10px;
-            margin-bottom: 30px;
-            text-align: center;
-        }
-        
-        .section {
+        .step {
             margin: 30px 0;
             padding: 25px;
             background: #f8f9fa;
@@ -47,16 +38,54 @@
             border-left: 5px solid #007acc;
         }
         
-        .manual-input-section {
+        .step.browser-step {
+            background: linear-gradient(135deg, #6f42c1, #6610f2);
+            color: white;
+            border-left: 5px solid #4c1d95;
+        }
+        
+        .step.coordinate-step {
             background: linear-gradient(135deg, #28a745, #20c997);
             color: white;
             border-left: 5px solid #155724;
         }
         
-        .offset-section {
+        .step.offset-step {
             background: linear-gradient(135deg, #ffc107, #ff8c00);
             color: white;
             border-left: 5px solid #856404;
+        }
+        
+        .step.test-step {
+            background: linear-gradient(135deg, #dc3545, #c82333);
+            color: white;
+            border-left: 5px solid #721c24;
+        }
+        
+        .browser-list {
+            margin: 20px 0;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .browser-item {
+            background: rgba(255,255,255,0.1);
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            cursor: pointer;
+            border: 2px solid rgba(255,255,255,0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .browser-item:hover {
+            background: rgba(255,255,255,0.2);
+            transform: translateY(-2px);
+        }
+        
+        .browser-item.selected {
+            border-color: #00ff00;
+            background: rgba(0,255,0,0.2);
         }
         
         .coordinate-grid {
@@ -133,12 +162,6 @@
             color: white;
         }
         
-        .preview-section {
-            background: #e9ecef;
-            color: #333;
-            border-left: 5px solid #6c757d;
-        }
-        
         .preview-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -147,19 +170,19 @@
         }
         
         .preview-card {
-            background: white;
+            background: rgba(255,255,255,0.1);
             padding: 15px;
             border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
         
         .coordinates-display {
             font-family: 'Courier New', monospace;
-            background: #f8f9fa;
+            background: rgba(0,0,0,0.2);
             padding: 10px;
             border-radius: 5px;
             margin: 10px 0;
             font-size: 14px;
+            color: white;
         }
         
         .button {
@@ -225,7 +248,7 @@
         
         .quick-fixes {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
             gap: 15px;
             margin: 20px 0;
         }
@@ -237,6 +260,7 @@
             text-align: center;
             cursor: pointer;
             transition: all 0.3s ease;
+            border: 2px solid rgba(255,255,255,0.2);
         }
         
         .quick-fix-card:hover {
@@ -251,75 +275,56 @@
             border-radius: 10px;
             font-family: 'Courier New', monospace;
             font-size: 14px;
-            max-height: 300px;
+            max-height: 400px;
             overflow-y: auto;
             margin: 20px 0;
+        }
+        
+        .step-number {
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 50%;
+            text-align: center;
+            line-height: 30px;
+            margin-right: 10px;
+            font-weight: bold;
+        }
+        
+        .browser-info {
+            background: rgba(255,255,255,0.1);
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>🎯 Enhanced OCR Setup</h1>
-            <p>Manuelle Koordinaten-Eingabe & Offset-Konfiguration</p>
-        </div>
-        
-        <div class="problem-banner">
-            <h2>🔧 Koordinaten-Problem beheben</h2>
-            <p><strong>Problem:</strong> Automatische Korrektur hat "zu hoch" gemacht</p>
-            <p><strong>Lösung:</strong> Manuelle Eingabe mit Live-Preview und anpassbaren Offsets</p>
+            <h1>🎯 Complete OCR Setup</h1>
+            <p>Browser-Targeting + Manuelle Koordinaten + Offset-Konfiguration</p>
         </div>
 
-        <!-- Global Offset Configuration -->
-        <div class="section offset-section">
-            <h3>⚙️ Globale Offset-Konfiguration</h3>
-            <p>Korrigiere alle Koordinaten mit diesen Offset-Werten (+ = nach rechts/unten, - = nach links/oben)</p>
+        <!-- Step 1: Browser Selection -->
+        <div class="step browser-step">
+            <h3><span class="step-number">1</span>Browser-Fenster auswählen</h3>
+            <p>Wähle dein Casino-Browser-Fenster aus, damit OCR nur dort liest (nicht mehr vom Taskbar!)</p>
             
-            <div class="offset-controls">
-                <div class="offset-input">
-                    <label>X-Offset (Horizontal)</label>
-                    <input type="number" id="globalOffsetX" value="0" onchange="updateAllPreviews()">
-                    <small>+ nach rechts, - nach links</small>
-                </div>
-                <div class="offset-input">
-                    <label>Y-Offset (Vertikal)</label>
-                    <input type="number" id="globalOffsetY" value="0" onchange="updateAllPreviews()">
-                    <small>+ nach unten, - nach oben</small>
-                </div>
-            </div>
-            
-            <div class="quick-fixes">
-                <div class="quick-fix-card" onclick="applyQuickFix(-25, -45)">
-                    <h4>🔄 Rückgängig</h4>
-                    <p>-25, -45</p>
-                    <small>Automatischen Fix rückgängig machen</small>
-                </div>
-                <div class="quick-fix-card" onclick="applyQuickFix(0, -30)">
-                    <h4>⬇️ Nur Y runter</h4>
-                    <p>0, -30</p>
-                    <small>Nur "zu hoch" Problem beheben</small>
-                </div>
-                <div class="quick-fix-card" onclick="applyQuickFix(10, -20)">
-                    <h4>🎯 Klein Korrektur</h4>
-                    <p>+10, -20</p>
-                    <small>Kleine Anpassung</small>
-                </div>
-                <div class="quick-fix-card" onclick="resetOffsets()">
-                    <h4>🔄 Reset</h4>
-                    <p>0, 0</p>
-                    <small>Alle Offsets zurücksetzen</small>
-                </div>
-            </div>
+            <button class="button" onclick="detectBrowserWindows()">🔍 Browser-Fenster erkennen</button>
+            <div id="browserWindowsList" class="browser-list"></div>
+            <div id="selectedBrowserInfo" class="browser-info" style="display: none;"></div>
         </div>
 
-        <!-- Manual Coordinate Input -->
-        <div class="section manual-input-section">
-            <h3>📝 Manuelle Koordinaten-Eingabe</h3>
-            <p>Gib die exakten Koordinaten für jeden OCR-Bereich ein. Diese werden dann mit den Offset-Werten korrigiert.</p>
+        <!-- Step 2: Coordinate Input -->
+        <div class="step coordinate-step">
+            <h3><span class="step-number">2</span>OCR-Bereiche konfigurieren</h3>
+            <p>Gib die Koordinaten für jeden Bereich ein (manuelle Eingabe oder Maus-Auswahl)</p>
             
             <div class="coordinate-grid">
                 <div class="area-card">
-                    <h4>💰 Bet (Einsatz) Bereich</h4>
+                    <h4>💰 Bet (Einsatz)</h4>
                     <div class="input-group">
                         <div class="input-field">
                             <label>X</label>
@@ -342,7 +347,7 @@
                 </div>
                 
                 <div class="area-card">
-                    <h4>🎯 Win (Gewinn) Bereich</h4>
+                    <h4>🎯 Win (Gewinn)</h4>
                     <div class="input-group">
                         <div class="input-field">
                             <label>X</label>
@@ -365,7 +370,7 @@
                 </div>
                 
                 <div class="area-card">
-                    <h4>💳 Balance (Guthaben) Bereich</h4>
+                    <h4>💳 Balance (Guthaben)</h4>
                     <div class="input-group">
                         <div class="input-field">
                             <label>X</label>
@@ -387,45 +392,87 @@
                     <button class="button" onclick="selectAreaManually('balance')">📍 Per Maus auswählen</button>
                 </div>
             </div>
+            
+            <button class="button" onclick="loadDefaults()">📋 Standard-Werte laden</button>
         </div>
 
-        <!-- Live Preview -->
-        <div class="section preview-section">
-            <h3>👀 Live-Preview (Original → Korrigiert)</h3>
-            <p>Hier siehst du, wie die Offset-Korrekturen deine eingegebenen Koordinaten verändern:</p>
+        <!-- Step 3: Offset Configuration -->
+        <div class="step offset-step">
+            <h3><span class="step-number">3</span>Offset-Korrektur (für "zu hoch" Problem)</h3>
+            <p>Korrigiere alle Koordinaten mit diesen Werten. Negative Werte = nach oben/links, Positive = nach unten/rechts</p>
             
+            <div class="offset-controls">
+                <div class="offset-input">
+                    <label>X-Offset</label>
+                    <input type="number" id="globalOffsetX" value="0" onchange="updateAllPreviews()" placeholder="0">
+                    <small>+ rechts, - links</small>
+                </div>
+                <div class="offset-input">
+                    <label>Y-Offset</label>
+                    <input type="number" id="globalOffsetY" value="0" onchange="updateAllPreviews()" placeholder="0">
+                    <small>+ runter, - hoch</small>
+                </div>
+            </div>
+            
+            <div class="quick-fixes">
+                <div class="quick-fix-card" onclick="applyQuickFix(0, -30)">
+                    <h4>⬇️ Zu hoch fix</h4>
+                    <p>Y: -30</p>
+                    <small>30px niedriger</small>
+                </div>
+                <div class="quick-fix-card" onclick="applyQuickFix(0, -20)">
+                    <h4>📉 Klein runter</h4>
+                    <p>Y: -20</p>
+                    <small>20px niedriger</small>
+                </div>
+                <div class="quick-fix-card" onclick="applyQuickFix(10, -25)">
+                    <h4>🎯 Kombi-Fix</h4>
+                    <p>X: +10, Y: -25</p>
+                    <small>Rechts + Runter</small>
+                </div>
+                <div class="quick-fix-card" onclick="resetOffsets()">
+                    <h4>🔄 Reset</h4>
+                    <p>X: 0, Y: 0</p>
+                    <small>Alles zurücksetzen</small>
+                </div>
+            </div>
+            
+            <!-- Live Preview -->
+            <h4>👀 Live-Preview (Original → Korrigiert)</h4>
             <div class="preview-grid">
                 <div class="preview-card">
-                    <h4>💰 Bet Preview</h4>
+                    <h4>💰 Bet</h4>
                     <div class="coordinates-display" id="betPreview">
-                        Original: {x: -, y: -, width: -, height: -}<br>
-                        Korrigiert: {x: -, y: -, width: -, height: -}
+                        Original: {x: -, y: -, w: -, h: -}<br>
+                        Korrigiert: {x: -, y: -, w: -, h: -}
                     </div>
                 </div>
                 <div class="preview-card">
-                    <h4>🎯 Win Preview</h4>
+                    <h4>🎯 Win</h4>
                     <div class="coordinates-display" id="winPreview">
-                        Original: {x: -, y: -, width: -, height: -}<br>
-                        Korrigiert: {x: -, y: -, width: -, height: -}
+                        Original: {x: -, y: -, w: -, h: -}<br>
+                        Korrigiert: {x: -, y: -, w: -, h: -}
                     </div>
                 </div>
                 <div class="preview-card">
-                    <h4>💳 Balance Preview</h4>
+                    <h4>💳 Balance</h4>
                     <div class="coordinates-display" id="balancePreview">
-                        Original: {x: -, y: -, width: -, height: -}<br>
-                        Korrigiert: {x: -, y: -, width: -, height: -}
+                        Original: {x: -, y: -, w: -, h: -}<br>
+                        Korrigiert: {x: -, y: -, w: -, h: -}
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Action Buttons -->
-        <div class="section">
-            <h3>🚀 Aktionen</h3>
-            <button class="button success" onclick="saveConfiguration()">💾 Konfiguration speichern</button>
-            <button class="button warning" onclick="testOCR()">🧪 OCR mit aktuellen Werten testen</button>
-            <button class="button" onclick="loadDefaults()">📋 Standard-Werte laden</button>
-            <button class="button danger" onclick="clearAll()">🗑️ Alle Felder leeren</button>
+        <!-- Step 4: Test -->
+        <div class="step test-step">
+            <h3><span class="step-number">4</span>Testen & Speichern</h3>
+            <p>Speichere die Konfiguration und teste, ob OCR korrekt funktioniert</p>
+            
+            <button class="button success" onclick="saveAndTest()">💾🧪 Speichern & Testen</button>
+            <button class="button warning" onclick="testOCROnly()">🧪 Nur testen</button>
+            <button class="button" onclick="saveConfiguration()">💾 Nur speichern</button>
+            <button class="button danger" onclick="clearAll()">🗑️ Alles löschen</button>
         </div>
 
         <!-- Status & Results -->
@@ -436,39 +483,105 @@
     <script>
         const { ipcRenderer } = require('electron');
         
-        let currentConfig = {
-            areas: {},
-            globalOffset: { x: 0, y: 0 }
-        };
+        let detectedBrowsers = [];
+        let selectedBrowserIndex = -1;
+        let currentConfig = { areas: {}, globalOffset: { x: 0, y: 0 } };
 
-        // Load existing configuration
-        async function loadExistingConfig() {
+        // Browser Detection
+        async function detectBrowserWindows() {
             try {
-                const config = await ipcRenderer.invoke('load-detection-config');
-                if (config && config.areas) {
-                    // Load existing areas into input fields
-                    for (const [areaType, area] of Object.entries(config.areas)) {
-                        if (area) {
-                            document.getElementById(areaType + 'X').value = area.x || '';
-                            document.getElementById(areaType + 'Y').value = area.y || '';
-                            document.getElementById(areaType + 'Width').value = area.width || '';
-                            document.getElementById(areaType + 'Height').value = area.height || '';
-                        }
-                    }
-                    updateAllPreviews();
-                    showStatus('✅ Bestehende Konfiguration geladen', 'success');
+                showStatus('🔍 Suche Browser-Fenster...', 'info');
+                const result = await ipcRenderer.invoke('detect-browser-windows');
+                
+                if (result.success && result.windows.length > 0) {
+                    detectedBrowsers = result.windows;
+                    displayBrowserWindows(result.windows);
+                    showStatus(`✅ ${result.windows.length} Browser-Fenster gefunden`, 'success');
+                } else {
+                    showStatus('❌ Keine Browser-Fenster gefunden', 'error');
                 }
             } catch (error) {
-                console.log('No existing config to load');
+                showStatus(`❌ Browser-Erkennung fehlgeschlagen: ${error.message}`, 'error');
             }
         }
 
-        // Quick fix functions
+        function displayBrowserWindows(windows) {
+            const listDiv = document.getElementById('browserWindowsList');
+            listDiv.innerHTML = '';
+            
+            windows.forEach((win, index) => {
+                const item = document.createElement('div');
+                item.className = 'browser-item';
+                item.innerHTML = `
+                    <strong>${win.ProcessName}</strong><br>
+                    ${win.Title}<br>
+                    <small>Größe: ${win.Width}×${win.Height} @ (${win.X}, ${win.Y})</small>
+                `;
+                item.onclick = () => selectBrowserWindow(index);
+                listDiv.appendChild(item);
+            });
+        }
+
+        async function selectBrowserWindow(index) {
+            try {
+                const result = await ipcRenderer.invoke('select-browser-window', index);
+                
+                if (result.success) {
+                    selectedBrowserIndex = index;
+                    
+                    // Update visual selection
+                    document.querySelectorAll('.browser-item').forEach((item, i) => {
+                        item.classList.toggle('selected', i === index);
+                    });
+                    
+                    // Show browser info
+                    const infoDiv = document.getElementById('selectedBrowserInfo');
+                    infoDiv.style.display = 'block';
+                    infoDiv.innerHTML = `
+                        <strong>✅ Ausgewähltes Browser-Fenster:</strong><br>
+                        <strong>${result.window.processName}</strong><br>
+                        ${result.window.title}<br>
+                        Größe: ${result.window.bounds.width}×${result.window.bounds.height}<br>
+                        <small>🎯 OCR wird nur in diesem Fenster lesen!</small>
+                    `;
+                    
+                    showStatus(`✅ Browser ausgewählt: ${result.window.processName}`, 'success');
+                } else {
+                    showStatus(`❌ Browser-Auswahl fehlgeschlagen: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showStatus(`❌ Fehler bei Browser-Auswahl: ${error.message}`, 'error');
+            }
+        }
+
+        // Coordinate Functions
+        function loadDefaults() {
+            // Original coordinates
+            document.getElementById('betX').value = 1356;
+            document.getElementById('betY').value = 1079;
+            document.getElementById('betWidth').value = 98;
+            document.getElementById('betHeight').value = 42;
+            
+            document.getElementById('winX').value = 962;
+            document.getElementById('winY').value = 1078;
+            document.getElementById('winWidth').value = 112;
+            document.getElementById('winHeight').value = 48;
+            
+            document.getElementById('balanceX').value = 547;
+            document.getElementById('balanceY').value = 1075;
+            document.getElementById('balanceWidth').value = 126;
+            document.getElementById('balanceHeight').value = 46;
+            
+            updateAllPreviews();
+            showStatus('📋 Standard-Koordinaten geladen', 'info');
+        }
+
+        // Offset Functions
         function applyQuickFix(offsetX, offsetY) {
             document.getElementById('globalOffsetX').value = offsetX;
             document.getElementById('globalOffsetY').value = offsetY;
             updateAllPreviews();
-            showStatus(`🔧 Quick-Fix angewendet: ${offsetX >= 0 ? '+' : ''}${offsetX}, ${offsetY >= 0 ? '+' : ''}${offsetY}`, 'info');
+            showStatus(`🔧 Quick-Fix angewendet: X${offsetX >= 0 ? '+' : ''}${offsetX}, Y${offsetY >= 0 ? '+' : ''}${offsetY}`, 'info');
         }
 
         function resetOffsets() {
@@ -478,7 +591,7 @@
             showStatus('🔄 Offsets zurückgesetzt', 'info');
         }
 
-        // Update preview for specific area
+        // Preview Functions
         function updatePreview(areaType) {
             const x = parseInt(document.getElementById(areaType + 'X').value) || 0;
             const y = parseInt(document.getElementById(areaType + 'Y').value) || 0;
@@ -498,85 +611,45 @@
             
             const previewElement = document.getElementById(areaType + 'Preview');
             previewElement.innerHTML = `
-                Original: {x: ${original.x}, y: ${original.y}, width: ${original.width}, height: ${original.height}}<br>
-                Korrigiert: {x: ${corrected.x}, y: ${corrected.y}, width: ${corrected.width}, height: ${corrected.height}}
+                Original: {x: ${original.x}, y: ${original.y}, w: ${original.width}, h: ${original.height}}<br>
+                Korrigiert: {x: ${corrected.x}, y: ${corrected.y}, w: ${corrected.width}, h: ${corrected.height}}
             `;
-            
-            // Color coding for changes
-            if (offsetX !== 0 || offsetY !== 0) {
-                previewElement.style.borderLeft = '4px solid #ffc107';
-            } else {
-                previewElement.style.borderLeft = '4px solid #28a745';
-            }
         }
 
-        // Update all previews
         function updateAllPreviews() {
             updatePreview('bet');
             updatePreview('win');
             updatePreview('balance');
         }
 
-        // Load default values
-        function loadDefaults() {
-            // Your original problematic coordinates
-            document.getElementById('betX').value = 1356;
-            document.getElementById('betY').value = 1079;
-            document.getElementById('betWidth').value = 98;
-            document.getElementById('betHeight').value = 42;
-            
-            document.getElementById('winX').value = 962;
-            document.getElementById('winY').value = 1078;
-            document.getElementById('winWidth').value = 112;
-            document.getElementById('winHeight').value = 48;
-            
-            document.getElementById('balanceX').value = 547;
-            document.getElementById('balanceY').value = 1075;
-            document.getElementById('balanceWidth').value = 126;
-            document.getElementById('balanceHeight').value = 46;
-            
-            // Reset offsets
-            document.getElementById('globalOffsetX').value = 0;
-            document.getElementById('globalOffsetY').value = 0;
-            
-            updateAllPreviews();
-            showStatus('📋 Standard-Werte geladen', 'info');
-        }
-
-        // Clear all fields
-        function clearAll() {
-            const fields = ['betX', 'betY', 'betWidth', 'betHeight', 'winX', 'winY', 'winWidth', 'winHeight', 'balanceX', 'balanceY', 'balanceWidth', 'balanceHeight'];
-            fields.forEach(field => document.getElementById(field).value = '');
-            
-            document.getElementById('globalOffsetX').value = 0;
-            document.getElementById('globalOffsetY').value = 0;
-            
-            updateAllPreviews();
-            showStatus('🗑️ Alle Felder geleert', 'info');
-        }
-
-        // Area selection with mouse
+        // Area Selection
         async function selectAreaManually(areaType) {
             try {
-                showStatus(`📍 Wähle den ${areaType}-Bereich mit der Maus aus...`, 'info');
+                showStatus(`📍 Wähle ${areaType}-Bereich mit der Maus aus...`, 'info');
                 await ipcRenderer.invoke('start-area-selection', areaType);
             } catch (error) {
-                showStatus(`❌ Fehler bei der Bereichs-Auswahl: ${error.message}`, 'error');
+                showStatus(`❌ Bereichs-Auswahl fehlgeschlagen: ${error.message}`, 'error');
             }
         }
 
-        // Save configuration
+        // Save & Test Functions
         async function saveConfiguration() {
             try {
+                if (selectedBrowserIndex === -1) {
+                    showStatus('⚠️ Bitte zuerst ein Browser-Fenster auswählen!', 'warning');
+                    return false;
+                }
+                
                 const offsetX = parseInt(document.getElementById('globalOffsetX').value) || 0;
                 const offsetY = parseInt(document.getElementById('globalOffsetY').value) || 0;
                 
-                const config = {
+                currentConfig = {
                     areas: {},
-                    globalOffset: { x: offsetX, y: offsetY }
+                    globalOffset: { x: offsetX, y: offsetY },
+                    selectedBrowserIndex: selectedBrowserIndex
                 };
                 
-                // Collect all area coordinates with offset applied
+                // Collect areas with offsets applied
                 const areas = ['bet', 'win', 'balance'];
                 for (const areaType of areas) {
                     const x = parseInt(document.getElementById(areaType + 'X').value);
@@ -585,7 +658,7 @@
                     const height = parseInt(document.getElementById(areaType + 'Height').value);
                     
                     if (x && y && width && height) {
-                        config.areas[areaType] = {
+                        currentConfig.areas[areaType] = {
                             x: x + offsetX,
                             y: y + offsetY,
                             width,
@@ -594,90 +667,104 @@
                     }
                 }
                 
-                if (Object.keys(config.areas).length === 0) {
-                    showStatus('❌ Keine gültigen Bereiche zu speichern', 'error');
+                if (Object.keys(currentConfig.areas).length === 0) {
+                    showStatus('❌ Keine gültigen Bereiche konfiguriert', 'error');
+                    return false;
+                }
+                
+                await ipcRenderer.invoke('save-detection-config', currentConfig);
+                showStatus(`✅ Konfiguration gespeichert: ${Object.keys(currentConfig.areas).length} Bereiche mit Offset (${offsetX}, ${offsetY})`, 'success');
+                return true;
+            } catch (error) {
+                showStatus(`❌ Speicher-Fehler: ${error.message}`, 'error');
+                return false;
+            }
+        }
+
+        async function testOCROnly() {
+            try {
+                if (selectedBrowserIndex === -1) {
+                    showStatus('⚠️ Bitte zuerst Browser-Fenster und Bereiche konfigurieren!', 'warning');
                     return;
                 }
                 
-                await ipcRenderer.invoke('save-detection-config', config);
-                currentConfig = config;
-                
-                showStatus(`✅ Konfiguration gespeichert mit ${Object.keys(config.areas).length} Bereichen (Offset: ${offsetX >= 0 ? '+' : ''}${offsetX}, ${offsetY >= 0 ? '+' : ''}${offsetY})`, 'success');
-            } catch (error) {
-                showStatus(`❌ Fehler beim Speichern: ${error.message}`, 'error');
-            }
-        }
-
-        // Test OCR with current values
-        async function testOCR() {
-            try {
-                // First save the current configuration
-                await saveConfiguration();
-                
-                showStatus('🧪 Teste OCR mit aktuellen Koordinaten...', 'info');
+                showStatus('🧪 Teste OCR...', 'info');
                 document.getElementById('testResults').style.display = 'block';
                 document.getElementById('testResults').innerHTML = '⏳ OCR-Test läuft...\n';
                 
-                const result = await ipcRenderer.invoke('test-spin-detection', currentConfig);
-                
-                let output = '🧪 OCR TEST ERGEBNISSE\n';
-                output += '========================\n\n';
-                
-                if (result.success) {
-                    output += `✅ Test erfolgreich abgeschlossen\n`;
-                    output += `📊 Analysierte Bereiche: ${result.areasAnalyzed?.length || 0}\n\n`;
-                    
-                    if (result.areasAnalyzed) {
-                        result.areasAnalyzed.forEach(area => {
-                            const status = parseFloat(area.value) > 0 ? '✅' : '❌';
-                            output += `${status} ${area.type.toUpperCase()}: ${area.value} (${area.confidence}% confidence)\n`;
-                            output += `   Bereich: ${area.areaInfo}\n`;
-                            if (area.method) output += `   Methode: ${area.method}\n`;
-                            if (area.analysisNotes) output += `   Notiz: ${area.analysisNotes}\n`;
-                            output += '\n';
-                        });
-                    }
-                    
-                    if (result.summary) {
-                        output += `📈 ZUSAMMENFASSUNG:\n`;
-                        output += `   Erfolgreiche Bereiche: ${result.summary.successfulCaptures}/${result.summary.totalAreas}\n`;
-                        output += `   Erfolgsrate: ${result.summary.successRate}\n`;
-                        if (result.summary.captureMethods) {
-                            output += `   Methoden: ${result.summary.captureMethods.join(', ')}\n`;
-                        }
-                    }
-                    
-                    showStatus('✅ OCR-Test abgeschlossen - Ergebnisse unten', 'success');
-                } else {
-                    output += `❌ Test fehlgeschlagen: ${result.error}\n`;
-                    if (result.suggestion) {
-                        output += `💡 Vorschlag: ${result.suggestion}\n`;
-                    }
-                    showStatus('❌ OCR-Test fehlgeschlagen - Details unten', 'error');
-                }
-                
-                document.getElementById('testResults').innerHTML = output;
+                // Use browser-specific OCR test
+                const result = await ipcRenderer.invoke('test-browser-ocr', currentConfig);
+                displayTestResults(result);
                 
             } catch (error) {
                 showStatus(`❌ Test-Fehler: ${error.message}`, 'error');
-                document.getElementById('testResults').innerHTML = `❌ Fehler: ${error.message}`;
+                document.getElementById('testResults').innerHTML = `❌ Test-Fehler: ${error.message}`;
             }
         }
 
-        // Show status message
+        async function saveAndTest() {
+            const saved = await saveConfiguration();
+            if (saved) {
+                await testOCROnly();
+            }
+        }
+
+        function displayTestResults(result) {
+            let output = '🧪 OCR TEST ERGEBNISSE\n';
+            output += '========================\n\n';
+            
+            if (result.success) {
+                output += `✅ Test erfolgreich\n`;
+                output += `🌐 Browser: ${result.browserWindow || 'Unbekannt'}\n`;
+                output += `📊 Bereiche: ${result.areasAnalyzed?.length || 0}\n\n`;
+                
+                if (result.areasAnalyzed) {
+                    result.areasAnalyzed.forEach(area => {
+                        const status = parseFloat(area.value) > 0 ? '✅' : '❌';
+                        output += `${status} ${area.type.toUpperCase()}: ${area.value}\n`;
+                        if (area.confidence) output += `   Confidence: ${area.confidence}%\n`;
+                        if (area.method) output += `   Methode: ${area.method}\n`;
+                        if (area.browserWindow) output += `   Browser: ${area.browserWindow}\n`;
+                        output += '\n';
+                    });
+                }
+                
+                showStatus('✅ OCR-Test abgeschlossen', 'success');
+            } else {
+                output += `❌ Test fehlgeschlagen: ${result.error}\n`;
+                if (result.suggestion) {
+                    output += `💡 Tipp: ${result.suggestion}\n`;
+                }
+                showStatus('❌ OCR-Test fehlgeschlagen', 'error');
+            }
+            
+            document.getElementById('testResults').innerHTML = output;
+        }
+
+        // Utility Functions
+        function clearAll() {
+            const fields = ['betX', 'betY', 'betWidth', 'betHeight', 'winX', 'winY', 'winWidth', 'winHeight', 'balanceX', 'balanceY', 'balanceWidth', 'balanceHeight'];
+            fields.forEach(field => document.getElementById(field).value = '');
+            
+            resetOffsets();
+            
+            selectedBrowserIndex = -1;
+            document.querySelectorAll('.browser-item').forEach(item => item.classList.remove('selected'));
+            document.getElementById('selectedBrowserInfo').style.display = 'none';
+            
+            showStatus('🗑️ Alle Konfigurationen gelöscht', 'info');
+        }
+
         function showStatus(message, type = 'info') {
             const statusDiv = document.getElementById('statusDisplay');
             statusDiv.innerHTML = `<div class="status ${type}">${message}</div>`;
             
-            // Auto-hide after 5 seconds for success/info messages
             if (type === 'success' || type === 'info') {
-                setTimeout(() => {
-                    statusDiv.innerHTML = '';
-                }, 5000);
+                setTimeout(() => statusDiv.innerHTML = '', 5000);
             }
         }
 
-        // Handle area configuration from area selection
+        // Event Handlers
         ipcRenderer.on('area-configured', (event, areaType, coordinates) => {
             document.getElementById(areaType + 'X').value = coordinates.x;
             document.getElementById(areaType + 'Y').value = coordinates.y;
@@ -688,10 +775,24 @@
             showStatus(`✅ ${areaType}-Bereich konfiguriert: ${coordinates.width}×${coordinates.height} @ (${coordinates.x}, ${coordinates.y})`, 'success');
         });
 
-        // Initialize on load
-        window.addEventListener('DOMContentLoaded', () => {
-            loadExistingConfig();
-            updateAllPreviews();
+        // Initialize
+        window.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const config = await ipcRenderer.invoke('load-detection-config');
+                if (config && config.areas) {
+                    for (const [areaType, area] of Object.entries(config.areas)) {
+                        if (area) {
+                            document.getElementById(areaType + 'X').value = area.x || '';
+                            document.getElementById(areaType + 'Y').value = area.y || '';
+                            document.getElementById(areaType + 'Width').value = area.width || '';
+                            document.getElementById(areaType + 'Height').value = area.height || '';
+                        }
+                    }
+                    updateAllPreviews();
+                }
+            } catch (error) {
+                console.log('No existing config found');
+            }
         });
     </script>
 </body>
