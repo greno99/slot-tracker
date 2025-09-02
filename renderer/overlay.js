@@ -466,14 +466,21 @@ class ElectronCasinoTracker {
             betInput.value = '';
             this.updateCurrentBetDisplay(); // Update display with new last bet
             
-            // Auto-focus win input after adding bet
+            // IMPROVED: Focus win input after adding bet, but make it work better
+            betInput.blur(); // Remove focus from bet input first
+            
             setTimeout(() => {
-                document.getElementById('winInput').focus();
+                const winInput = document.getElementById('winInput');
+                winInput.focus();
+                // Select all text in win input for easy overwriting
+                winInput.select();
             }, 100);
+            
+            this.showNotification(`Einsatz: €${betAmount.toFixed(2)} - Gewinn eingeben`, 'info', 2000);
         }
     }
     
-    // IMPROVED: Better win addition with validation
+    // IMPROVED: Better win addition with validation and focus management
     addWin() {
         if (!this.isTracking || this.isPaused) {
             this.showNotification('Session nicht aktiv!', 'error');
@@ -506,10 +513,19 @@ class ElectronCasinoTracker {
                     this.showNotification(`Gewinn: €${winAmount.toFixed(2)}`, 'success');
                 }
                 
-                // Auto-focus bet input for next spin
+                // FIXED: Don't auto-focus bet input, keep hotkeys available
+                // Instead, blur the win input to make hotkeys work immediately
+                winInput.blur();
+                
+                // Ensure hotkeys are immediately available by removing any focus
+                document.activeElement.blur();
+                
+                // Brief visual feedback to show the win was registered
                 setTimeout(() => {
-                    document.getElementById('betInput').focus();
-                }, 100);
+                    // Only focus bet input if user presses F1 within 3 seconds
+                    this.showNotification('Hotkeys aktiv - F1 für nächsten Spin oder Bet-Feld anklicken', 'info', 2000);
+                }, 500);
+                
             } else {
                 this.showNotification('Kein offener Spin für Gewinn vorhanden!', 'error');
             }
@@ -963,7 +979,7 @@ class ElectronCasinoTracker {
         }
     }
     
-    showNotification(message, type = 'info') {
+    showNotification(message, type = 'info', duration = 3000) {
         const notification = document.getElementById('notification');
         notification.textContent = message;
         notification.className = `notification ${type}`;
@@ -971,7 +987,7 @@ class ElectronCasinoTracker {
         
         setTimeout(() => {
             notification.classList.remove('show');
-        }, 3000);
+        }, duration);
     }
 }
 

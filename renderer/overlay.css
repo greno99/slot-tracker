@@ -28,7 +28,9 @@ body {
     transition: all 0.3s ease;
     z-index: 10000;
     max-height: 90vh;
-    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; /* Remove overflow from container */
 }
 
 .overlay-header {
@@ -41,6 +43,7 @@ body {
     cursor: move;
     border-radius: 10px 10px 0 0;
     -webkit-app-region: drag;
+    flex-shrink: 0; /* Prevent header from shrinking */
 }
 
 .overlay-title {
@@ -102,6 +105,9 @@ body {
 
 .overlay-content {
     padding: 15px;
+    flex: 1; /* Take remaining space */
+    overflow-y: auto; /* Enable scrolling */
+    overflow-x: hidden; /* Prevent horizontal scrolling */
 }
 
 .session-section {
@@ -419,21 +425,25 @@ body {
 }
 
 /* NEW: Scrollbar styling for better UX */
-.last-spins::-webkit-scrollbar {
+.last-spins::-webkit-scrollbar,
+.overlay-content::-webkit-scrollbar {
     width: 4px;
 }
 
-.last-spins::-webkit-scrollbar-track {
+.last-spins::-webkit-scrollbar-track,
+.overlay-content::-webkit-scrollbar-track {
     background: rgba(255, 255, 255, 0.1);
     border-radius: 2px;
 }
 
-.last-spins::-webkit-scrollbar-thumb {
+.last-spins::-webkit-scrollbar-thumb,
+.overlay-content::-webkit-scrollbar-thumb {
     background: rgba(255, 255, 255, 0.3);
     border-radius: 2px;
 }
 
-.last-spins::-webkit-scrollbar-thumb:hover {
+.last-spins::-webkit-scrollbar-thumb:hover,
+.overlay-content::-webkit-scrollbar-thumb:hover {
     background: rgba(255, 255, 255, 0.5);
 }
 

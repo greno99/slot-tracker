@@ -10,6 +10,14 @@ class StatsWindow {
             showCurrentSession: true,
             confirmDeletes: true
         };
+        
+        // NEW: Pagination state
+        this.pagination = {
+            currentPage: 1,
+            sessionsPerPage: 25,
+            totalPages: 1
+        };
+        
         this.init();
         this.setupEventListeners();
     }
@@ -36,10 +44,11 @@ class StatsWindow {
                 allSessions.push(currentSessionForStats);
             }
 
-            // Assign unique IDs to sessions without them
+            // Assign unique IDs to sessions without them - use consistent ID generation
             allSessions.forEach((session, index) => {
                 if (!session.id) {
-                    session.id = `session_${Date.now()}_${index}`;
+                    // Create consistent ID based on session data
+                    session.id = `session_${session.startTime}_${session.game}_${session.spins}_${index}`;
                 }
             });
 
@@ -146,6 +155,37 @@ class StatsWindow {
         document.getElementById('closeNotification').addEventListener('click', () => {
             this.hideNotification();
         });
+        
+        // NEW: Pagination event listeners
+        document.getElementById('sessionsPerPage').addEventListener('change', (e) => {
+            this.pagination.sessionsPerPage = e.target.value === 'all' ? 'all' : parseInt(e.target.value);
+            this.pagination.currentPage = 1;
+            this.renderSessionsTable(this.filteredSessions);
+        });
+        
+        document.getElementById('firstPage').addEventListener('click', () => {
+            this.pagination.currentPage = 1;
+            this.renderSessionsTable(this.filteredSessions);
+        });
+        
+        document.getElementById('prevPage').addEventListener('click', () => {
+            if (this.pagination.currentPage > 1) {
+                this.pagination.currentPage--;
+                this.renderSessionsTable(this.filteredSessions);
+            }
+        });
+        
+        document.getElementById('nextPage').addEventListener('click', () => {
+            if (this.pagination.currentPage < this.pagination.totalPages) {
+                this.pagination.currentPage++;
+                this.renderSessionsTable(this.filteredSessions);
+            }
+        });
+        
+        document.getElementById('lastPage').addEventListener('click', () => {
+            this.pagination.currentPage = this.pagination.totalPages;
+            this.renderSessionsTable(this.filteredSessions);
+        });
     }
 
     updateFilterOptions() {
@@ -208,6 +248,18 @@ class StatsWindow {
         document.getElementById('visibleSessionsCount').textContent = this.filteredSessions.length;
         document.getElementById('totalSessionsCount').textContent = this.allSessions.length;
         document.getElementById('selectedCount').textContent = this.selectedSessions.size;
+    }
+    
+    // NEW: Update pagination UI elements
+    updatePaginationUI() {
+        document.getElementById('currentPage').textContent = this.pagination.currentPage;
+        document.getElementById('totalPages').textContent = this.pagination.totalPages;
+        
+        // Enable/disable pagination buttons
+        document.getElementById('firstPage').disabled = this.pagination.currentPage <= 1;
+        document.getElementById('prevPage').disabled = this.pagination.currentPage <= 1;
+        document.getElementById('nextPage').disabled = this.pagination.currentPage >= this.pagination.totalPages;
+        document.getElementById('lastPage').disabled = this.pagination.currentPage >= this.pagination.totalPages;
     }
 
     selectAllSessions(checked) {
@@ -345,15 +397,36 @@ class StatsWindow {
 
     async executeDeleteSessions(sessionsToDelete) {
         try {
+            console.log('Deleting sessions:', sessionsToDelete.map(s => ({ id: s.id, game: s.game, startTime: s.startTime })));
+            
             // Remove sessions from the stored data
             const currentSessions = await ipcRenderer.invoke('get-store-data', 'sessions') || [];
             const sessionIdsToDelete = new Set(sessionsToDelete.map(s => s.id));
             
+            console.log('Current sessions before deletion:', currentSessions.length);
+            console.log('Session IDs to delete:', Array.from(sessionIdsToDelete));
+            
             // Filter out sessions to delete (excluding current session)
             const remainingSessions = currentSessions.filter(session => {
-                const sessionId = session.id || `session_${session.startTime}_${session.game}`;
-                return !sessionIdsToDelete.has(sessionId);
+                // Create consistent ID for comparison
+                const sessionId = session.id || `session_${session.startTime}_${Math.floor(Math.random() * 1000)}`;
+                
+                // Also check by startTime and game as fallback
+                const shouldDelete = sessionIdsToDelete.has(sessionId) || 
+                    sessionsToDelete.some(delSession => 
+                        delSession.startTime === session.startTime && 
+                        delSession.game === session.game &&
+                        delSession.spins === session.spins
+                    );
+                
+                if (shouldDelete) {
+                    console.log('Deleting session:', { id: sessionId, game: session.game, startTime: session.startTime });
+                }
+                
+                return !shouldDelete;
             });
+
+            console.log('Remaining sessions after deletion:', remainingSessions.length);
 
             // Save the updated sessions
             await ipcRenderer.invoke('set-store-data', 'sessions', remainingSessions);
@@ -602,8 +675,29 @@ class StatsWindow {
         const sortedSessions = [...sessions].sort((a, b) => 
             new Date(b.startTime) - new Date(a.startTime)
         );
+        
+        // NEW: Calculate pagination
+        let sessionsToShow = sortedSessions;
+        if (this.pagination.sessionsPerPage !== 'all') {
+            this.pagination.totalPages = Math.ceil(sortedSessions.length / this.pagination.sessionsPerPage);
+            
+            // Ensure current page is valid
+            if (this.pagination.currentPage > this.pagination.totalPages) {
+                this.pagination.currentPage = Math.max(1, this.pagination.totalPages);
+            }
+            
+            const startIndex = (this.pagination.currentPage - 1) * this.pagination.sessionsPerPage;
+            const endIndex = startIndex + this.pagination.sessionsPerPage;
+            sessionsToShow = sortedSessions.slice(startIndex, endIndex);
+        } else {
+            this.pagination.totalPages = 1;
+            this.pagination.currentPage = 1;
+        }
+        
+        // Update pagination UI
+        this.updatePaginationUI();
 
-        sortedSessions.forEach(session => {
+        sessionsToShow.forEach(session => {
             const row = document.createElement('tr');
 
             // Add classes for special session types

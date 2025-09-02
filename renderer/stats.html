@@ -115,6 +115,11 @@
             <!-- Profit/Loss Chart -->
             <div class="chart-container">
                 <div class="chart-title">Profit/Verlust pro Session</div>
+                <div class="chart-legend">
+                    <span class="legend-item profit">🟢 Gewinn-Sessions</span>
+                    <span class="legend-item loss">🔴 Verlust-Sessions</span>
+                    <span class="legend-item current">🔵 Laufende Session</span>
+                </div>
                 <div class="chart" id="profitChart"></div>
             </div>
             
@@ -137,6 +142,28 @@
                         <span class="session-count">Zeige <span id="visibleSessionsCount">0</span> von <span id="totalSessionsCount">0</span> Sessions</span>
                     </div>
                 </div>
+                
+                <!-- NEW: Pagination Controls -->
+                <div class="pagination-controls">
+                    <div class="pagination-info">
+                        Sessions pro Seite: 
+                        <select id="sessionsPerPage">
+                            <option value="10">10</option>
+                            <option value="25" selected>25</option>
+                            <option value="50">50</option>
+                            <option value="100">100</option>
+                            <option value="all">Alle</option>
+                        </select>
+                    </div>
+                    <div class="pagination-buttons">
+                        <button class="pagination-btn" id="firstPage">««</button>
+                        <button class="pagination-btn" id="prevPage">«</button>
+                        <span class="page-info">Seite <span id="currentPage">1</span> von <span id="totalPages">1</span></span>
+                        <button class="pagination-btn" id="nextPage">»</button>
+                        <button class="pagination-btn" id="lastPage">»»</button>
+                    </div>
+                </div>
+                
                 <div class="table-wrapper">
                     <table>
                         <thead>
