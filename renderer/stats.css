@@ -302,6 +302,17 @@ select:focus {
     background: linear-gradient(135deg, #10b981 0%, #059669 100%);
 }
 
+.chart-bar.current {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    border: 2px solid #1d4ed8;
+    animation: currentSessionPulse 2s infinite;
+}
+
+@keyframes currentSessionPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
 /* Table Styles */
 .sessions-table {
     background: white;
@@ -643,6 +654,17 @@ tr.session-test {
     
     .stats-grid {
         grid-template-columns: 1fr 1fr;
+    }
+    
+    /* NEW: Pagination responsive */
+    .pagination-controls {
+        flex-direction: column;
+        text-align: center;
+        gap: 10px;
+    }
+    
+    .pagination-buttons {
+        justify-content: center;
     }
 }
 

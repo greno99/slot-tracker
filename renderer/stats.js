@@ -613,15 +613,27 @@ class StatsWindow {
             const width = maxProfit > 0 ? Math.abs(profit) / maxProfit * 100 : 10;
 
             const bar = document.createElement('div');
-            bar.className = `chart-bar ${profit >= 0 ? 'positive' : 'negative'}`;
+            
+            // IMPROVED: Better color coding
+            let barClass = 'chart-bar';
+            if (session.isCurrent) {
+                barClass += ' current';
+            } else if (profit >= 0) {
+                barClass += ' positive';
+            } else {
+                barClass += ' negative';
+            }
+            
+            bar.className = barClass;
             bar.style.width = `${Math.max(width, 10)}%`;
 
             const date = new Date(session.startTime).toLocaleDateString('de-DE');
             const game = session.game || 'Unbekannt';
-            const currentLabel = session.isCurrent ? ' (Laufend)' : '';
+            const currentLabel = session.isCurrent ? ' 🔴 (Laufend)' : '';
+            const profitEmoji = session.isCurrent ? '🔵' : (profit >= 0 ? '🟢' : '🔴');
 
-            bar.innerHTML = `${date} - ${game}${currentLabel}: €${profit.toFixed(2)}`;
-            bar.title = `Session ${index + 1}: €${profit.toFixed(2)} Profit`;
+            bar.innerHTML = `${profitEmoji} ${date} - ${game}${currentLabel}: €${profit.toFixed(2)}`;
+            bar.title = `Session ${index + 1}: €${profit.toFixed(2)} Profit${session.isCurrent ? ' (Laufende Session)' : ''}`;
 
             container.appendChild(bar);
         });
