@@ -220,6 +220,7 @@
                 <span class="status-indicator status-offline" id="overlayStatus"></span>
                 Overlay anzeigen
             </button>
+            <button class="btn" id="showStatsBtn">📊 Statistiken anzeigen</button>
             <button class="btn btn-secondary" id="exportBtn">Daten exportieren</button>
             <button class="btn btn-secondary" id="importBtn">Daten importieren</button>
             <button class="btn btn-danger" id="clearDataBtn">Daten löschen</button>
@@ -327,6 +328,10 @@
             setupEventListeners() {
                 document.getElementById('showOverlayBtn').addEventListener('click', () => {
                     this.toggleOverlay();
+                });
+                
+                document.getElementById('showStatsBtn').addEventListener('click', () => {
+                    this.showStats();
                 });
                 
                 document.getElementById('exportBtn').addEventListener('click', () => {
@@ -488,6 +493,17 @@
                 // Diese Funktionalität würde mit dem Main Process kommunizieren
                 // um das Overlay-Fenster zu zeigen/verstecken
                 console.log('Toggle Overlay');
+            }
+            
+            async showStats() {
+                try {
+                    console.log('Opening stats window from dashboard...');
+                    await ipcRenderer.invoke('open-stats-window');
+                    console.log('Stats window opened successfully');
+                } catch (error) {
+                    console.error('Error opening stats window:', error);
+                    alert(`Fehler beim Öffnen der Statistiken: ${error.message}`);
+                }
             }
             
             async exportData() {

@@ -678,3 +678,66 @@ tr.session-test {
         align-items: flex-start;
     }
 }
+
+.chart-navigation {
+    background: #f8fafc;
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 12px;
+    border: 1px solid #e2e8f0;
+}
+
+.chart-nav-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.nav-btn {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+
+.nav-btn:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 3px 10px rgba(102, 126, 234, 0.3);
+}
+
+.nav-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.chart-range-info {
+    font-size: 12px;
+    color: #4a5568;
+    font-weight: 500;
+}
+
+.chart-view-controls {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+}
+
+.chart-view-controls label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    color: #4a5568;
+    cursor: pointer;
+}
+
+.chart-view-controls input[type="radio"] {
+    accent-color: #667eea;
+}

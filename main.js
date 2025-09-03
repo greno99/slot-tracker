@@ -614,14 +614,18 @@ function createOverlayWindow() {
 }
 
 function createStatsWindow() {
+  // Check if stats window already exists
   const existingStatsWindow = BrowserWindow.getAllWindows().find(w => 
     w.getTitle() === 'Casino Tracker - Statistiken'
   );
   
-  if (existingStatsWindow) {
+  if (existingStatsWindow && !existingStatsWindow.isDestroyed()) {
+    console.log('📊 Focusing existing stats window');
     existingStatsWindow.focus();
-    return;
+    return { success: true, existing: true };
   }
+
+  console.log('📊 Creating new stats window...');
 
   statsWindow = new BrowserWindow({
     width: 1200,
@@ -631,7 +635,8 @@ function createStatsWindow() {
       contextIsolation: false
     },
     icon: path.join(__dirname, 'assets/icon.png'),
-    title: 'Casino Tracker - Statistiken'
+    title: 'Casino Tracker - Statistiken',
+    show: false
   });
 
   statsWindow.loadFile('renderer/stats.html');
@@ -639,8 +644,20 @@ function createStatsWindow() {
   if (isDev) {
     statsWindow.webContents.openDevTools();
   }
+  
+  // Show window once it's ready
+  statsWindow.once('ready-to-show', () => {
+    statsWindow.show();
+    console.log('✅ Stats window opened successfully');
+  });
+  
+  // Clean up when closed
+  statsWindow.on('closed', () => {
+    console.log('📊 Stats window closed');
+    statsWindow = null;
+  });
 
-  statsWindow.show();
+  return { success: true, existing: false };
 }
 
 function createSpinDetectionWindow() {
@@ -1282,7 +1299,15 @@ ipcMain.handle('quit-app', () => {
 });
 
 ipcMain.handle('open-stats-window', () => {
-  createStatsWindow();
+  try {
+    console.log('📊 IPC: Opening stats window...');
+    const result = createStatsWindow();
+    console.log('✅ IPC: Stats window result:', result);
+    return result;
+  } catch (error) {
+    console.error('❌ IPC: Error opening stats window:', error);
+    return { success: false, error: error.message };
+  }
 });
 
 // Spin Detection IPC Handlers

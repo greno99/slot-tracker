@@ -595,89 +595,263 @@ class StatsWindow {
 
         // Render charts and table
         this.renderProfitChart(sessions);
-        this.renderRTPChart(sessions);
         this.renderSessionsTable(sessions);
         this.updateSessionCounts();
     }
 
     renderProfitChart(sessions) {
-        const container = document.getElementById('profitChart');
-        container.innerHTML = '';
+    const container = document.getElementById('profitChart');
+    container.innerHTML = '';
 
-        if (sessions.length === 0) return;
+    if (sessions.length === 0) return;
 
-        const maxProfit = Math.max(...sessions.map(s => Math.abs(s.profit || 0)));
+    // Chart-Container Setup
+    container.style.position = 'relative';
+    container.style.height = '400px';
+    container.style.overflow = 'hidden';
 
-        sessions.forEach((session, index) => {
-            const profit = session.profit || 0;
-            const width = maxProfit > 0 ? Math.abs(profit) / maxProfit * 100 : 10;
+    // Navigation Controls
+    const navContainer = document.createElement('div');
+    navContainer.className = 'chart-navigation';
+    navContainer.innerHTML = `
+        <div class="chart-nav-controls">
+            <button class="nav-btn" id="prevSessionsBtn">‹ Früher</button>
+            <span class="chart-range-info" id="chartRangeInfo">Sessions 1-20 von ${sessions.length}</span>
+            <button class="nav-btn" id="nextSessionsBtn">Später ›</button>
+        </div>
+        <div class="chart-view-controls">
+            <label>
+                <input type="radio" name="chartView" value="20" checked> 20 Sessions
+            </label>
+            <label>
+                <input type="radio" name="chartView" value="50"> 50 Sessions
+            </label>
+            <label>
+                <input type="radio" name="chartView" value="all"> Alle Sessions
+            </label>
+        </div>
+    `;
 
-            const bar = document.createElement('div');
-            
-            // IMPROVED: Better color coding
-            let barClass = 'chart-bar';
-            if (session.isCurrent) {
-                barClass += ' current';
-            } else if (profit >= 0) {
-                barClass += ' positive';
-            } else {
-                barClass += ' negative';
+    // Chart Properties
+    this.chartState = this.chartState || {
+        currentOffset: 0,
+        sessionsPerView: 20
+    };
+
+    // Navigation Event Listeners
+    const setupNavigation = () => {
+        document.getElementById('prevSessionsBtn').onclick = () => {
+            if (this.chartState.currentOffset > 0) {
+                this.chartState.currentOffset = Math.max(0, this.chartState.currentOffset - this.chartState.sessionsPerView);
+                this.renderProfitChart(sessions);
             }
+        };
+
+        document.getElementById('nextSessionsBtn').onclick = () => {
+            if (this.chartState.currentOffset + this.chartState.sessionsPerView < sessions.length) {
+                this.chartState.currentOffset = Math.min(sessions.length - this.chartState.sessionsPerView, 
+                                                        this.chartState.currentOffset + this.chartState.sessionsPerView);
+                this.renderProfitChart(sessions);
+            }
+        };
+
+        document.querySelectorAll('input[name="chartView"]').forEach(radio => {
+            radio.onchange = () => {
+                this.chartState.sessionsPerView = radio.value === 'all' ? sessions.length : parseInt(radio.value);
+                this.chartState.currentOffset = 0;
+                this.renderProfitChart(sessions);
+            };
+        });
+    };
+
+    // Determine visible sessions
+    const maxSessions = this.chartState.sessionsPerView === sessions.length ? 
+                       sessions.length : this.chartState.sessionsPerView;
+    const startIndex = this.chartState.currentOffset;
+    const endIndex = Math.min(startIndex + maxSessions, sessions.length);
+    const visibleSessions = sessions.slice(startIndex, endIndex);
+
+    // Update navigation info
+    const updateNavInfo = () => {
+        const rangeInfo = document.getElementById('chartRangeInfo');
+        if (rangeInfo) {
+            rangeInfo.textContent = `Sessions ${startIndex + 1}-${endIndex} von ${sessions.length}`;
+        }
+
+        const prevBtn = document.getElementById('prevSessionsBtn');
+        const nextBtn = document.getElementById('nextSessionsBtn');
+        if (prevBtn) prevBtn.disabled = startIndex === 0;
+        if (nextBtn) nextBtn.disabled = endIndex >= sessions.length;
+    };
+
+    // Chart Canvas
+    const chartCanvas = document.createElement('div');
+    chartCanvas.className = 'horizontal-chart-canvas';
+    chartCanvas.style.cssText = `
+        height: 320px;
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+        padding: 10px 0;
+        overflow-y: auto;
+        background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+        border-radius: 8px;
+        border: 1px solid #e2e8f0;
+    `;
+
+    // Calculate max profit for scaling
+    const maxAbsProfit = Math.max(...visibleSessions.map(s => Math.abs(s.profit || 0)));
+    const chartWidth = container.clientWidth - 40; // Leave space for labels
+
+    // Create bars
+    visibleSessions.forEach((session, index) => {
+        const profit = session.profit || 0;
+        const actualIndex = startIndex + index;
+        
+        // Bar container
+        const barContainer = document.createElement('div');
+        barContainer.style.cssText = `
+            display: flex;
+            align-items: center;
+            height: ${Math.max(20, 300 / visibleSessions.length - 3)}px;
+            position: relative;
+            margin-bottom: 2px;
+        `;
+
+        // Session label
+        const sessionLabel = document.createElement('div');
+        sessionLabel.style.cssText = `
+            width: 120px;
+            font-size: 10px;
+            color: #4a5568;
+            padding-right: 8px;
+            text-align: right;
+            flex-shrink: 0;
+        `;
+        
+        const date = new Date(session.startTime).toLocaleDateString('de-DE', {
+            day: '2-digit',
+            month: '2-digit'
+        });
+        const gameShort = (session.game || 'N/A').length > 10 ? 
+                         (session.game || 'N/A').substring(0, 10) + '...' : 
+                         (session.game || 'N/A');
+        sessionLabel.textContent = `${date} ${gameShort}`;
+
+        // Profit bar
+        const profitBar = document.createElement('div');
+        const barWidth = maxAbsProfit > 0 ? 
+                        Math.max(20, Math.abs(profit) / maxAbsProfit * (chartWidth - 150)) : 20;
+        
+        let barClass = 'horizontal-profit-bar';
+        let barColor;
+        
+        if (session.isCurrent) {
+            barColor = 'linear-gradient(90deg, #3b82f6 0%, #2563eb 100%)';
+            profitBar.style.border = '2px solid #1d4ed8';
+        } else if (profit >= 0) {
+            barColor = 'linear-gradient(90deg, #10b981 0%, #059669 100%)';
+        } else {
+            barColor = 'linear-gradient(90deg, #ef4444 0%, #dc2626 100%)';
+        }
+
+        profitBar.style.cssText = `
+            height: 100%;
+            width: ${barWidth}px;
+            background: ${barColor};
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            padding: 0 8px;
+            color: white;
+            font-size: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            position: relative;
+        `;
+
+        // Bar content
+        const profitText = `€${profit.toFixed(2)}`;
+        const rtpText = session.rtp ? ` (${session.rtp.toFixed(1)}%)` : '';
+        profitBar.innerHTML = `
+            <span>${profitText}</span>
+            <span style="font-size: 8px; opacity: 0.8; margin-left: 4px;">${rtpText}</span>
+        `;
+
+        // Current session indicator
+        if (session.isCurrent) {
+            const currentIndicator = document.createElement('div');
+            currentIndicator.innerHTML = '🔴 Laufend';
+            currentIndicator.style.cssText = `
+                position: absolute;
+                right: -80px;
+                font-size: 8px;
+                color: #3b82f6;
+                font-weight: bold;
+                background: rgba(59, 130, 246, 0.1);
+                padding: 2px 6px;
+                border-radius: 12px;
+                border: 1px solid rgba(59, 130, 246, 0.3);
+            `;
+            profitBar.appendChild(currentIndicator);
+        }
+
+        // Hover effects and tooltips
+        profitBar.onmouseover = () => {
+            profitBar.style.transform = 'scaleY(1.1)';
+            profitBar.style.zIndex = '10';
             
-            bar.className = barClass;
-            bar.style.width = `${Math.max(width, 10)}%`;
+            // Enhanced tooltip
+            profitBar.title = `
+Session ${actualIndex + 1}
+Datum: ${new Date(session.startTime).toLocaleDateString('de-DE')}
+Spiel: ${session.game || 'Unbekannt'}
+Spins: ${session.spins || 0}
+Einsatz: €${(session.totalBet || 0).toFixed(2)}
+Gewinn: €${(session.totalWin || 0).toFixed(2)}
+Profit: €${profit.toFixed(2)}
+RTP: ${(session.rtp || 0).toFixed(1)}%
+${session.isCurrent ? '\n🔴 Laufende Session' : ''}
+            `.trim();
+        };
 
-            const date = new Date(session.startTime).toLocaleDateString('de-DE');
-            const game = session.game || 'Unbekannt';
-            const currentLabel = session.isCurrent ? ' 🔴 (Laufend)' : '';
-            const profitEmoji = session.isCurrent ? '🔵' : (profit >= 0 ? '🟢' : '🔴');
+        profitBar.onmouseleave = () => {
+            profitBar.style.transform = 'scaleY(1)';
+            profitBar.style.zIndex = 'auto';
+        };
 
-            bar.innerHTML = `${profitEmoji} ${date} - ${game}${currentLabel}: €${profit.toFixed(2)}`;
-            bar.title = `Session ${index + 1}: €${profit.toFixed(2)} Profit${session.isCurrent ? ' (Laufende Session)' : ''}`;
+        // Assembly
+        barContainer.appendChild(sessionLabel);
+        barContainer.appendChild(profitBar);
+        chartCanvas.appendChild(barContainer);
+    });
 
-            container.appendChild(bar);
-        });
-    }
+    // Zero line indicator
+    const zeroLine = document.createElement('div');
+    zeroLine.style.cssText = `
+        position: absolute;
+        left: 128px;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: #6b7280;
+        opacity: 0.3;
+        pointer-events: none;
+        z-index: 5;
+    `;
 
-    renderRTPChart(sessions) {
-        const container = document.getElementById('rtpChart');
-        container.innerHTML = '';
+    // Assembly
+    container.appendChild(navContainer);
+    container.appendChild(chartCanvas);
+    chartCanvas.appendChild(zeroLine);
 
-        if (sessions.length === 0) return;
+    // Setup navigation after DOM is ready
+    setTimeout(setupNavigation, 0);
+    setTimeout(updateNavInfo, 0);
+}
 
-        sessions.forEach((session, index) => {
-            const rtp = session.rtp || 0;
-            const width = rtp / 150 * 100; // Scale to 150% max for better visualization
-
-            const bar = document.createElement('div');
-            let rtpClass = 'chart-bar';
-            if (rtp >= 95) rtpClass += ' positive';
-            else if (rtp >= 85) rtpClass += '';
-            else rtpClass += ' negative';
-
-            bar.className = rtpClass;
-            bar.style.width = `${Math.max(width, 10)}%`;
-
-            const date = new Date(session.startTime).toLocaleDateString('de-DE');
-            const game = session.game || 'Unbekannt';
-            const currentLabel = session.isCurrent ? ' (Laufend)' : '';
-
-            bar.innerHTML = `${date} - ${game}${currentLabel}: ${rtp.toFixed(1)}%`;
-            bar.title = `Session ${index + 1}: ${rtp.toFixed(1)}% RTP`;
-
-            container.appendChild(bar);
-        });
-
-        // Add RTP reference line
-        const refLine = document.createElement('div');
-        refLine.style.borderLeft = '2px dashed #718096';
-        refLine.style.position = 'absolute';
-        refLine.style.left = '60%'; // 90% RTP reference
-        refLine.style.top = '0';
-        refLine.style.height = '100%';
-        refLine.title = '90% RTP Referenzlinie';
-        container.appendChild(refLine);
-    }
 
     renderSessionsTable(sessions) {
         const tbody = document.getElementById('sessionsTableBody');
