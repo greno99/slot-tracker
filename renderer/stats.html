@@ -1,25 +1,28 @@
 <!DOCTYPE html>
 <html lang="de">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Casino Tracker - Statistiken</title>
     <link rel="stylesheet" href="stats.css">
 </head>
+
 <body>
     <button class="close-btn" id="closeBtn">×</button>
-    
+
     <div class="stats-container">
         <div class="stats-header">
             <h1>Casino Session Statistiken</h1>
             <p id="statsSubtitle">Lade Daten...</p>
         </div>
-        
+
         <div id="noDataMessage" class="no-data" style="display: none;">
             <h3>Keine Daten verfügbar</h3>
-            <p>Starte eine Session und füge ein paar Spins hinzu, oder beende eine laufende Session um Statistiken zu sehen.</p>
+            <p>Starte eine Session und füge ein paar Spins hinzu, oder beende eine laufende Session um Statistiken zu
+                sehen.</p>
         </div>
-        
+
         <div id="statsContent" style="display: none;">
             <!-- Session Management Controls -->
             <div class="session-controls">
@@ -40,7 +43,7 @@
                         </button>
                     </div>
                 </div>
-                
+
                 <div class="control-group">
                     <h3>🔍 Filter</h3>
                     <div class="filter-controls">
@@ -56,12 +59,12 @@
                             <option value="">Alle RTP</option>
                             <option value="high">Hohe RTP (>95%)</option>
                             <option value="medium">Mittlere RTP (85-95%)</option>
-                            <option value="low">Niedrige RTP (<85%)</option>
+                            <option value="low">Niedrige RTP (<85%)< /option>
                         </select>
                         <button class="secondary-btn" id="clearFilters">Filter zurücksetzen</button>
                     </div>
                 </div>
-                
+
                 <div class="control-group">
                     <h3>⚙️ Einstellungen</h3>
                     <div class="settings-controls">
@@ -83,7 +86,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <!-- Overview Cards -->
             <div class="stats-grid">
                 <div class="stat-card">
@@ -111,7 +114,7 @@
                     <div class="stat-label">⌀ Profit pro Session</div>
                 </div>
             </div>
-            
+
             <!-- Profit/Loss Chart -->
             <div class="chart-container">
                 <div class="chart-title">Profit/Verlust pro Session</div>
@@ -122,7 +125,7 @@
                 </div>
                 <div class="chart" id="profitChart"></div>
             </div>
-            
+
             <!-- Sessions Table -->
             <div class="sessions-table">
                 <div class="table-header">
@@ -133,14 +136,15 @@
                             <span class="checkmark"></span>
                             Alle auswählen
                         </label>
-                        <span class="session-count">Zeige <span id="visibleSessionsCount">0</span> von <span id="totalSessionsCount">0</span> Sessions</span>
+                        <span class="session-count">Zeige <span id="visibleSessionsCount">0</span> von <span
+                                id="totalSessionsCount">0</span> Sessions</span>
                     </div>
                 </div>
-                
+
                 <!-- NEW: Pagination Controls -->
                 <div class="pagination-controls">
                     <div class="pagination-info">
-                        Sessions pro Seite: 
+                        Sessions pro Seite:
                         <select id="sessionsPerPage">
                             <option value="10">10</option>
                             <option value="25" selected>25</option>
@@ -152,12 +156,13 @@
                     <div class="pagination-buttons">
                         <button class="pagination-btn" id="firstPage">««</button>
                         <button class="pagination-btn" id="prevPage">«</button>
-                        <span class="page-info">Seite <span id="currentPage">1</span> von <span id="totalPages">1</span></span>
+                        <span class="page-info">Seite <span id="currentPage">1</span> von <span
+                                id="totalPages">1</span></span>
                         <button class="pagination-btn" id="nextPage">»</button>
                         <button class="pagination-btn" id="lastPage">»»</button>
                     </div>
                 </div>
-                
+
                 <div class="table-wrapper">
                     <table>
                         <thead>
@@ -209,4 +214,5 @@
 
     <script src="stats.js"></script>
 </body>
+
 </html>

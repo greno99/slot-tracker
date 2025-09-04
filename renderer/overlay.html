@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="de">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Casino Tracker Overlay</title>
     <link rel="stylesheet" href="overlay.css">
 </head>
+
 <body>
     <div class="overlay-container" id="overlay">
         <div class="overlay-header">
@@ -16,46 +18,90 @@
                 <button class="close-btn" id="closeBtn">×</button>
             </div>
         </div>
-        
+
         <div class="overlay-content" id="content">
             <!-- Aktuelles Spiel -->
             <div class="game-section">
                 <div class="detected-game" id="currentGame">Kein Spiel aktiv</div>
                 <div class="quick-input">
-                    <input type="text" class="input-field" id="gameInput" placeholder="Spielname eingeben..." autocomplete="off" tabindex="1">
+                    <input type="text" class="input-field" id="gameInput" placeholder="Spielname eingeben..."
+                        autocomplete="off" tabindex="1">
                     <button class="btn" id="setGameBtn">Set</button>
                 </div>
                 <div class="input-hint">📝 Spielname hier eingeben und Enter drücken</div>
             </div>
-            
+
             <!-- Session Controls -->
             <div class="session-controls">
                 <button class="btn" id="startBtn">Start</button>
                 <button class="btn" id="pauseBtn">Pause</button>
                 <button class="btn btn-danger" id="stopBtn">Stop</button>
             </div>
-            
+
             <!-- Current Bet Display -->
             <div class="current-bet-section">
                 <div class="current-bet-label">Aktueller Einsatz:</div>
                 <div class="current-bet-amount" id="currentBetAmount">€1.00</div>
             </div>
-            
+
+            <!-- NEU: Balance Tracking Section -->
+            <div class="balance-section">
+                <div class="balance-header">
+                    <div class="balance-main">
+                        <div class="balance-label">Guthaben:</div>
+                        <div class="balance-amount" id="currentBalance">€100.00</div>
+                    </div>
+                    <div class="balance-controls">
+                        <button class="btn balance-btn" id="addBalanceBtn">💰</button>
+                        <button class="btn balance-btn" id="withdrawBalanceBtn">💸</button>
+                    </div>
+                </div>
+
+                <div class="balance-change" id="balanceChange" style="display: none;">
+                    <span class="balance-change-text" id="balanceChangeText">+€0.00</span>
+                </div>
+
+                <!-- Balance Quick Actions -->
+                <div class="balance-quick-actions" id="balanceActions" style="display: none;">
+                    <div class="quick-input balance-input-row">
+                        <input type="number" class="input-field balance-input" id="balanceInput"
+                            placeholder="Betrag eingeben..." step="0.01" min="0" autocomplete="off">
+                        <select class="balance-type-select" id="balanceTypeSelect">
+                            <option value="deposit">💰 Einzahlung</option>
+                            <option value="withdraw">💸 Auszahlung</option>
+                            <option value="bonus">🎁 Bonus</option>
+                            <option value="correction">🔧 Korrektur</option>
+                        </select>
+                    </div>
+                    <div class="balance-action-buttons">
+                        <button class="btn balance-confirm" id="confirmBalanceBtn">Bestätigen</button>
+                        <button class="btn btn-secondary balance-cancel" id="cancelBalanceBtn">Abbrechen</button>
+                    </div>
+                    <div class="balance-note-input">
+                        <input type="text" class="input-field" id="balanceNoteInput" placeholder="Notiz (optional)..."
+                            maxlength="100">
+                    </div>
+                </div>
+            </div>
+
+
             <!-- VEREINFACHT: Nur manuelle Eingabe -->
             <div style="margin-bottom: 15px;">
                 <div class="quick-input">
-                    <input type="number" class="input-field" id="betInput" placeholder="Einsatz eingeben..." step="0.01" min="0" autocomplete="off">
+                    <input type="number" class="input-field" id="betInput" placeholder="Einsatz eingeben..." step="0.01"
+                        min="0" autocomplete="off">
                     <button class="btn" id="addBetBtn">Bet</button>
                 </div>
                 <div class="wheel-hint">🖱️ Mausrad für ±€0.05 • Enter-Taste zum Bestätigen</div>
-                
+
                 <div class="quick-input" style="margin-top: 8px;">
-                    <input type="number" class="input-field" id="winInput" placeholder="Gewinn eingeben..." step="0.01" min="0" autocomplete="off">
+                    <input type="number" class="input-field" id="winInput" placeholder="Gewinn eingeben..." step="0.01"
+                        min="0" autocomplete="off">
                     <button class="btn" id="addWinBtn">Win</button>
                 </div>
                 <div class="wheel-hint">🖱️ Mausrad für ±€0.05 • Enter-Taste zum Bestätigen</div>
             </div>
-            
+
             <!-- Session Stats -->
             <div class="session-section">
                 <div class="session-info">
@@ -76,7 +122,7 @@
                         <div class="info-value profit-positive" id="totalWin">€0.00</div>
                     </div>
                 </div>
-                
+
                 <div class="stats-grid">
                     <div class="stat-item">
                         <div class="info-label">RTP</div>
@@ -92,23 +138,25 @@
                     </div>
                 </div>
             </div>
-            
+
             <!-- Letzte Spins -->
             <div style="margin-bottom: 15px;">
                 <div style="font-weight: bold; margin-bottom: 8px; font-size: 11px;">Letzte Spins:</div>
-                <div id="editModeIndicator" style="display: none; background: rgba(255,193,7,0.2); color: #ffc107; padding: 5px; text-align: center; font-size: 10px; border-radius: 3px; margin-bottom: 5px;"></div>
+                <div id="editModeIndicator"
+                    style="display: none; background: rgba(255,193,7,0.2); color: #ffc107; padding: 5px; text-align: center; font-size: 10px; border-radius: 3px; margin-bottom: 5px;">
+                </div>
                 <div class="last-spins" id="lastSpins">
                     <!-- Wird dynamisch gefüllt -->
                 </div>
             </div>
-            
+
             <!-- Export & Tools -->
             <div class="session-controls" style="grid-template-columns: 1fr 1fr 1fr;">
                 <button class="btn" id="exportBtn">Export</button>
                 <button class="btn" id="statsBtn">Stats</button>
                 <button class="btn" id="editModeBtn" onclick="tracker.toggleEditMode()">✏️ Edit</button>
             </div>
-            
+
             <!-- VEREINFACHTE Hotkeys Info -->
             <div class="hotkeys-section">
                 <div class="hotkey-grid">
@@ -125,9 +173,10 @@
             </div>
         </div>
     </div>
-    
+
     <!-- Notification -->
     <div class="notification" id="notification"></div>
     <script src="overlay.js"></script>
 </body>
+
 </html>
