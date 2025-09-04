@@ -24,164 +24,183 @@
         </div>
 
         <div id="statsContent" style="display: none;">
-            <!-- Session Management Controls -->
-            <div class="session-controls">
-                <div class="control-group">
-                    <h3>🗑️ Session Management</h3>
-                    <div class="bulk-actions">
-                        <button class="danger-btn" id="deleteTestSessions">
-                            🧪 Test Sessions löschen
-                        </button>
-                        <button class="danger-btn" id="deleteWrongBets">
-                            ⚠️ Sessions mit falschen Einsätzen löschen
-                        </button>
-                        <button class="danger-btn" id="deleteZeroWinSessions">
-                            💸 Sessions ohne Gewinne löschen
-                        </button>
-                        <button class="danger-btn" id="deleteSelectedSessions">
-                            ❌ Ausgewählte Sessions löschen (<span id="selectedCount">0</span>)
-                        </button>
+            <!-- NEW: Tab Navigation -->
+            <div class="stats-tabs">
+                <button class="tab-btn active" id="overviewTab">
+                    <span class="tab-icon">📊</span>
+                    <span class="tab-text">Overview</span>
+                </button>
+                <button class="tab-btn" id="chartTab">
+                    <span class="tab-icon">📈</span>
+                    <span class="tab-text">Chart</span>
+                </button>
+            </div>
+
+            <!-- Overview Tab Content -->
+            <div class="tab-content active" id="overviewContent">
+                <!-- Session Management Controls -->
+                <div class="session-controls">
+                    <div class="control-group">
+                        <h3>🗑️ Session Management</h3>
+                        <div class="bulk-actions">
+                            <button class="danger-btn" id="deleteTestSessions">
+                                🧪 Test Sessions löschen
+                            </button>
+                            <button class="danger-btn" id="deleteWrongBets">
+                                ⚠️ Sessions mit falschen Einsätzen löschen
+                            </button>
+                            <button class="danger-btn" id="deleteZeroWinSessions">
+                                💸 Sessions ohne Gewinne löschen
+                            </button>
+                            <button class="danger-btn" id="deleteSelectedSessions">
+                                ❌ Ausgewählte Sessions löschen (<span id="selectedCount">0</span>)
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <h3>🔍 Filter</h3>
+                        <div class="filter-controls">
+                            <select id="gameFilter">
+                                <option value="">Alle Spiele</option>
+                            </select>
+                            <select id="profitFilter">
+                                <option value="">Alle Sessions</option>
+                                <option value="profit">Nur Gewinn-Sessions</option>
+                                <option value="loss">Nur Verlust-Sessions</option>
+                            </select>
+                            <select id="rtpFilter">
+                                <option value="">Alle RTP</option>
+                                <option value="high">Hohe RTP (>95%)</option>
+                                <option value="medium">Mittlere RTP (85-95%)</option>
+                                <option value="low">Niedrige RTP (<85%)</option>
+                            </select>
+                            <button class="secondary-btn" id="clearFilters">Filter zurücksetzen</button>
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <h3>⚙️ Einstellungen</h3>
+                        <div class="settings-controls">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="suspiciousBets" />
+                                <span class="checkmark"></span>
+                                Verdächtige Einsätze markieren (>€20 oder Dezimalkomma-Fehler)
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="showCurrentSession" checked />
+                                <span class="checkmark"></span>
+                                Laufende Session anzeigen
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="confirmDeletes" checked />
+                                <span class="checkmark"></span>
+                                Löschvorgänge bestätigen
+                            </label>
+                        </div>
                     </div>
                 </div>
 
-                <div class="control-group">
-                    <h3>🔍 Filter</h3>
-                    <div class="filter-controls">
-                        <select id="gameFilter">
-                            <option value="">Alle Spiele</option>
-                        </select>
-                        <select id="profitFilter">
-                            <option value="">Alle Sessions</option>
-                            <option value="profit">Nur Gewinn-Sessions</option>
-                            <option value="loss">Nur Verlust-Sessions</option>
-                        </select>
-                        <select id="rtpFilter">
-                            <option value="">Alle RTP</option>
-                            <option value="high">Hohe RTP (>95%)</option>
-                            <option value="medium">Mittlere RTP (85-95%)</option>
-                            <option value="low">Niedrige RTP (<85%)< /option>
-                        </select>
-                        <button class="secondary-btn" id="clearFilters">Filter zurücksetzen</button>
+                <!-- Overview Cards -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" id="totalSessions">0</div>
+                        <div class="stat-label">Gesamt Sessions</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="totalSpins">0</div>
+                        <div class="stat-label">Gesamt Spins</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="totalProfit">€0.00</div>
+                        <div class="stat-label">Gesamt Profit</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="avgRTP">0%</div>
+                        <div class="stat-label">Durchschnittliche RTP</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="biggestWin">€0.00</div>
+                        <div class="stat-label">Größter Gewinn</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="avgSession">€0.00</div>
+                        <div class="stat-label">⌀ Profit pro Session</div>
                     </div>
                 </div>
 
-                <div class="control-group">
-                    <h3>⚙️ Einstellungen</h3>
-                    <div class="settings-controls">
-                        <label class="checkbox-label">
-                            <input type="checkbox" id="suspiciousBets" />
-                            <span class="checkmark"></span>
-                            Verdächtige Einsätze markieren (>€20 oder Dezimalkomma-Fehler)
-                        </label>
-                        <label class="checkbox-label">
-                            <input type="checkbox" id="showCurrentSession" checked />
-                            <span class="checkmark"></span>
-                            Laufende Session anzeigen
-                        </label>
-                        <label class="checkbox-label">
-                            <input type="checkbox" id="confirmDeletes" checked />
-                            <span class="checkmark"></span>
-                            Löschvorgänge bestätigen
-                        </label>
+                <!-- Sessions Table -->
+                <div class="sessions-table">
+                    <div class="table-header">
+                        <div class="chart-title">Session Details</div>
+                        <div class="table-actions">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="selectAllSessions" />
+                                <span class="checkmark"></span>
+                                Alle auswählen
+                            </label>
+                            <span class="session-count">Zeige <span id="visibleSessionsCount">0</span> von <span
+                                    id="totalSessionsCount">0</span> Sessions</span>
+                        </div>
+                    </div>
+
+                    <!-- Pagination Controls -->
+                    <div class="pagination-controls">
+                        <div class="pagination-info">
+                            Sessions pro Seite:
+                            <select id="sessionsPerPage">
+                                <option value="10">10</option>
+                                <option value="25" selected>25</option>
+                                <option value="50">50</option>
+                                <option value="100">100</option>
+                                <option value="all">Alle</option>
+                            </select>
+                        </div>
+                        <div class="pagination-buttons">
+                            <button class="pagination-btn" id="firstPage">««</button>
+                            <button class="pagination-btn" id="prevPage">«</button>
+                            <span class="page-info">Seite <span id="currentPage">1</span> von <span
+                                    id="totalPages">1</span></span>
+                            <button class="pagination-btn" id="nextPage">»</button>
+                            <button class="pagination-btn" id="lastPage">»»</button>
+                        </div>
+                    </div>
+
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th></th>
+                                    <th>Datum</th>
+                                    <th>Spiel</th>
+                                    <th>Dauer</th>
+                                    <th>Spins</th>
+                                    <th>Einsatz</th>
+                                    <th>Gewinn</th>
+                                    <th>Profit</th>
+                                    <th>RTP</th>
+                                    <th>Aktionen</th>
+                                </tr>
+                            </thead>
+                            <tbody id="sessionsTableBody">
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
 
-            <!-- Overview Cards -->
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-value" id="totalSessions">0</div>
-                    <div class="stat-label">Gesamt Sessions</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value" id="totalSpins">0</div>
-                    <div class="stat-label">Gesamt Spins</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value" id="totalProfit">€0.00</div>
-                    <div class="stat-label">Gesamt Profit</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value" id="avgRTP">0%</div>
-                    <div class="stat-label">Durchschnittliche RTP</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value" id="biggestWin">€0.00</div>
-                    <div class="stat-label">Größter Gewinn</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value" id="avgSession">€0.00</div>
-                    <div class="stat-label">⌀ Profit pro Session</div>
-                </div>
-            </div>
-
-            <!-- Profit/Loss Chart -->
-            <div class="chart-container">
-                <div class="chart-title">Profit/Verlust pro Session</div>
-                <div class="chart-legend">
-                    <span class="legend-item profit">🟢 Gewinn-Sessions</span>
-                    <span class="legend-item loss">🔴 Verlust-Sessions</span>
-                    <span class="legend-item current">🔵 Laufende Session</span>
-                </div>
-                <div class="chart" id="profitChart"></div>
-            </div>
-
-            <!-- Sessions Table -->
-            <div class="sessions-table">
-                <div class="table-header">
-                    <div class="chart-title">Session Details</div>
-                    <div class="table-actions">
-                        <label class="checkbox-label">
-                            <input type="checkbox" id="selectAllSessions" />
-                            <span class="checkmark"></span>
-                            Alle auswählen
-                        </label>
-                        <span class="session-count">Zeige <span id="visibleSessionsCount">0</span> von <span
-                                id="totalSessionsCount">0</span> Sessions</span>
+            <!-- Chart Tab Content (Hidden by default) -->
+            <div class="tab-content" id="chartContent">
+                <!-- Dedicated Chart View -->
+                <div class="chart-container chart-fullscreen">
+                    <div class="chart-title">Session Profit/Verlust Chart</div>
+                    <div class="chart-subtitle">Interaktive Übersicht aller Session-Ergebnisse</div>
+                    <div class="chart-legend">
+                        <span class="legend-item profit">🟢 Gewinn-Sessions</span>
+                        <span class="legend-item loss">🔴 Verlust-Sessions</span>
+                        <span class="legend-item current">🔵 Laufende Session</span>
                     </div>
-                </div>
-
-                <!-- NEW: Pagination Controls -->
-                <div class="pagination-controls">
-                    <div class="pagination-info">
-                        Sessions pro Seite:
-                        <select id="sessionsPerPage">
-                            <option value="10">10</option>
-                            <option value="25" selected>25</option>
-                            <option value="50">50</option>
-                            <option value="100">100</option>
-                            <option value="all">Alle</option>
-                        </select>
-                    </div>
-                    <div class="pagination-buttons">
-                        <button class="pagination-btn" id="firstPage">««</button>
-                        <button class="pagination-btn" id="prevPage">«</button>
-                        <span class="page-info">Seite <span id="currentPage">1</span> von <span
-                                id="totalPages">1</span></span>
-                        <button class="pagination-btn" id="nextPage">»</button>
-                        <button class="pagination-btn" id="lastPage">»»</button>
-                    </div>
-                </div>
-
-                <div class="table-wrapper">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th></th>
-                                <th>Datum</th>
-                                <th>Spiel</th>
-                                <th>Dauer</th>
-                                <th>Spins</th>
-                                <th>Einsatz</th>
-                                <th>Gewinn</th>
-                                <th>Profit</th>
-                                <th>RTP</th>
-                                <th>Aktionen</th>
-                            </tr>
-                        </thead>
-                        <tbody id="sessionsTableBody">
-                        </tbody>
-                    </table>
+                    <div class="chart" id="profitChart"></div>
                 </div>
             </div>
         </div>

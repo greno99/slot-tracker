@@ -22,6 +22,34 @@ class StatsWindow {
         this.setupEventListeners();
     }
 
+    // NEW: Tab switching functionality
+    switchTab(tabName) {
+        // Update tab buttons
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        
+        document.querySelectorAll('.tab-content').forEach(content => {
+            content.classList.remove('active');
+        });
+        
+        // Activate selected tab
+        if (tabName === 'overview') {
+            document.getElementById('overviewTab').classList.add('active');
+            document.getElementById('overviewContent').classList.add('active');
+        } else if (tabName === 'chart') {
+            document.getElementById('chartTab').classList.add('active');
+            document.getElementById('chartContent').classList.add('active');
+            
+            // Re-render chart when switching to chart tab to ensure proper sizing
+            setTimeout(() => {
+                if (this.filteredSessions && this.filteredSessions.length > 0) {
+                    this.renderProfitChart(this.filteredSessions);
+                }
+            }, 100);
+        }
+    }
+
     async init() {
         try {
             // Load both completed sessions and current session
@@ -47,8 +75,8 @@ class StatsWindow {
             // Assign unique IDs to sessions without them - use consistent ID generation
             allSessions.forEach((session, index) => {
                 if (!session.id) {
-                    // Create consistent ID based on session data
-                    session.id = `session_${session.startTime}_${session.game}_${session.spins}_${index}`;
+                    // Create consistent ID based on session data (must match main.js logic)
+                    session.id = `session_${session.startTime}_${session.game}`;
                 }
             });
 
@@ -71,6 +99,15 @@ class StatsWindow {
     }
 
     setupEventListeners() {
+        // NEW: Tab switching event listeners
+        document.getElementById('overviewTab').addEventListener('click', () => {
+            this.switchTab('overview');
+        });
+
+        document.getElementById('chartTab').addEventListener('click', () => {
+            this.switchTab('chart');
+        });
+
         // Close button
         document.getElementById('closeBtn').addEventListener('click', () => {
             window.close();
@@ -594,263 +631,212 @@ class StatsWindow {
         avgEl.className = `stat-value ${avgSession >= 0 ? 'profit-positive' : 'profit-negative'}`;
 
         // Render charts and table
-        this.renderProfitChart(sessions);
+        // NOTE: Chart is now only rendered in the dedicated Chart tab
         this.renderSessionsTable(sessions);
         this.updateSessionCounts();
     }
 
     renderProfitChart(sessions) {
-    const container = document.getElementById('profitChart');
-    container.innerHTML = '';
+        const container = document.getElementById('profitChart');
+        container.innerHTML = '';
 
-    if (sessions.length === 0) return;
+        if (sessions.length === 0) return;
 
-    // Chart-Container Setup
-    container.style.position = 'relative';
-    container.style.height = '400px';
-    container.style.overflow = 'hidden';
-
-    // Navigation Controls
-    const navContainer = document.createElement('div');
-    navContainer.className = 'chart-navigation';
-    navContainer.innerHTML = `
-        <div class="chart-nav-controls">
-            <button class="nav-btn" id="prevSessionsBtn">‹ Früher</button>
-            <span class="chart-range-info" id="chartRangeInfo">Sessions 1-20 von ${sessions.length}</span>
-            <button class="nav-btn" id="nextSessionsBtn">Später ›</button>
-        </div>
-        <div class="chart-view-controls">
-            <label>
-                <input type="radio" name="chartView" value="20" checked> 20 Sessions
-            </label>
-            <label>
-                <input type="radio" name="chartView" value="50"> 50 Sessions
-            </label>
-            <label>
-                <input type="radio" name="chartView" value="all"> Alle Sessions
-            </label>
-        </div>
-    `;
-
-    // Chart Properties
-    this.chartState = this.chartState || {
-        currentOffset: 0,
-        sessionsPerView: 20
-    };
-
-    // Navigation Event Listeners
-    const setupNavigation = () => {
-        document.getElementById('prevSessionsBtn').onclick = () => {
-            if (this.chartState.currentOffset > 0) {
-                this.chartState.currentOffset = Math.max(0, this.chartState.currentOffset - this.chartState.sessionsPerView);
-                this.renderProfitChart(sessions);
-            }
-        };
-
-        document.getElementById('nextSessionsBtn').onclick = () => {
-            if (this.chartState.currentOffset + this.chartState.sessionsPerView < sessions.length) {
-                this.chartState.currentOffset = Math.min(sessions.length - this.chartState.sessionsPerView, 
-                                                        this.chartState.currentOffset + this.chartState.sessionsPerView);
-                this.renderProfitChart(sessions);
-            }
-        };
-
-        document.querySelectorAll('input[name="chartView"]').forEach(radio => {
-            radio.onchange = () => {
-                this.chartState.sessionsPerView = radio.value === 'all' ? sessions.length : parseInt(radio.value);
-                this.chartState.currentOffset = 0;
-                this.renderProfitChart(sessions);
+        // Initialize chart state if not exists
+        if (!this.chartState) {
+            this.chartState = {
+                currentOffset: 0,
+                sessionsPerView: Math.min(20, sessions.length)
             };
-        });
-    };
-
-    // Determine visible sessions
-    const maxSessions = this.chartState.sessionsPerView === sessions.length ? 
-                       sessions.length : this.chartState.sessionsPerView;
-    const startIndex = this.chartState.currentOffset;
-    const endIndex = Math.min(startIndex + maxSessions, sessions.length);
-    const visibleSessions = sessions.slice(startIndex, endIndex);
-
-    // Update navigation info
-    const updateNavInfo = () => {
-        const rangeInfo = document.getElementById('chartRangeInfo');
-        if (rangeInfo) {
-            rangeInfo.textContent = `Sessions ${startIndex + 1}-${endIndex} von ${sessions.length}`;
         }
 
-        const prevBtn = document.getElementById('prevSessionsBtn');
-        const nextBtn = document.getElementById('nextSessionsBtn');
-        if (prevBtn) prevBtn.disabled = startIndex === 0;
-        if (nextBtn) nextBtn.disabled = endIndex >= sessions.length;
-    };
+        // Chart controls
+    const controlsDiv = document.createElement('div');
+    controlsDiv.className = 'modern-chart-controls';
+    controlsDiv.innerHTML = `
+    <div class="chart-view-selector">
+            <label class="view-option ${this.chartState.sessionsPerView === 10 ? 'active' : ''}">
+                <input type="radio" name="chartView" value="10" ${this.chartState.sessionsPerView === 10 ? 'checked' : ''}>
+            <span>10 Sessions</span>
+    </label>
+        <label class="view-option ${this.chartState.sessionsPerView === 20 ? 'active' : ''}">
+            <input type="radio" name="chartView" value="20" ${this.chartState.sessionsPerView === 20 ? 'checked' : ''}>
+        <span>20 Sessions</span>
+        </label>
+        <label class="view-option ${this.chartState.sessionsPerView === 50 ? 'active' : ''}">
+        <input type="radio" name="chartView" value="50" ${this.chartState.sessionsPerView === 50 ? 'checked' : ''}>
+            <span>50 Sessions</span>
+            </label>
+                <label class="view-option ${this.chartState.sessionsPerView === sessions.length ? 'active' : ''}">
+                    <input type="radio" name="chartView" value="all" ${this.chartState.sessionsPerView === sessions.length ? 'checked' : ''}>
+                    <span>Alle ${sessions.length}</span>
+                </label>
+        </div>
+        <div class="chart-navigation">
+                <button class="nav-btn" id="chartPrevBtn" ${this.chartState.currentOffset <= 0 ? 'disabled' : ''}>
+                    ← Früher
+            </button>
+            <span class="chart-info">
+            Sessions ${this.chartState.currentOffset + 1}-${Math.min(this.chartState.currentOffset + this.chartState.sessionsPerView, sessions.length)} von ${sessions.length}
+    </span>
+    <button class="nav-btn" id="chartNextBtn" ${this.chartState.currentOffset + this.chartState.sessionsPerView >= sessions.length ? 'disabled' : ''}>
+    Später →
+    </button>
+    </div>
+        `;
+    
+    container.appendChild(controlsDiv);
 
-    // Chart Canvas
+    // Calculate visible sessions
+    const visibleSessions = sessions.slice(
+    this.chartState.currentOffset, 
+    this.chartState.currentOffset + this.chartState.sessionsPerView
+        );
+
+    // Chart canvas
     const chartCanvas = document.createElement('div');
-    chartCanvas.className = 'horizontal-chart-canvas';
-    chartCanvas.style.cssText = `
-        height: 320px;
-        display: flex;
-        flex-direction: column;
-        gap: 3px;
-        padding: 10px 0;
-        overflow-y: auto;
-        background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-        border-radius: 8px;
-        border: 1px solid #e2e8f0;
-    `;
+    chartCanvas.className = 'modern-chart-canvas';
+    container.appendChild(chartCanvas);
 
-    // Calculate max profit for scaling
+    // Calculate chart dimensions and scaling
     const maxAbsProfit = Math.max(...visibleSessions.map(s => Math.abs(s.profit || 0)));
-    const chartWidth = container.clientWidth - 40; // Leave space for labels
+    const chartHeight = Math.max(400, visibleSessions.length * 35);
+    chartCanvas.style.height = chartHeight + 'px';
 
-    // Create bars
-    visibleSessions.forEach((session, index) => {
-        const profit = session.profit || 0;
-        const actualIndex = startIndex + index;
-        
-        // Bar container
-        const barContainer = document.createElement('div');
-        barContainer.style.cssText = `
-            display: flex;
-            align-items: center;
-            height: ${Math.max(20, 300 / visibleSessions.length - 3)}px;
-            position: relative;
-            margin-bottom: 2px;
-        `;
-
-        // Session label
+        // Create bars for each session
+        visibleSessions.forEach((session, index) => {
+    const actualIndex = this.chartState.currentOffset + index;
+            const profit = session.profit || 0;
+            const rtp = session.rtp || 0;
+            
+            const barContainer = document.createElement('div');
+            barContainer.className = 'chart-bar-container';
+            
+        // Session info label
         const sessionLabel = document.createElement('div');
-        sessionLabel.style.cssText = `
-            width: 120px;
-            font-size: 10px;
-            color: #4a5568;
-            padding-right: 8px;
-            text-align: right;
-            flex-shrink: 0;
-        `;
-        
+    sessionLabel.className = 'session-label';
         const date = new Date(session.startTime).toLocaleDateString('de-DE', {
-            day: '2-digit',
+                day: '2-digit',
             month: '2-digit'
         });
-        const gameShort = (session.game || 'N/A').length > 10 ? 
-                         (session.game || 'N/A').substring(0, 10) + '...' : 
-                         (session.game || 'N/A');
-        sessionLabel.textContent = `${date} ${gameShort}`;
-
+        const gameShort = (session.game || 'Unknown').length > 12 ? 
+                         (session.game || 'Unknown').substring(0, 12) + '...' : 
+                             (session.game || 'Unknown');
+            sessionLabel.innerHTML = `
+                <div class="session-date">${date}</div>
+                <div class="session-game">${gameShort}</div>
+                <div class="session-stats">${session.spins || 0} spins • ${rtp.toFixed(1)}%</div>
+            `;
+        
         // Profit bar
+        const barWrapper = document.createElement('div');
+        barWrapper.className = 'bar-wrapper';
+        
         const profitBar = document.createElement('div');
-        const barWidth = maxAbsProfit > 0 ? 
-                        Math.max(20, Math.abs(profit) / maxAbsProfit * (chartWidth - 150)) : 20;
-        
-        let barClass = 'horizontal-profit-bar';
-        let barColor;
-        
-        if (session.isCurrent) {
-            barColor = 'linear-gradient(90deg, #3b82f6 0%, #2563eb 100%)';
-            profitBar.style.border = '2px solid #1d4ed8';
-        } else if (profit >= 0) {
-            barColor = 'linear-gradient(90deg, #10b981 0%, #059669 100%)';
-        } else {
-            barColor = 'linear-gradient(90deg, #ef4444 0%, #dc2626 100%)';
-        }
-
-        profitBar.style.cssText = `
-            height: 100%;
-            width: ${barWidth}px;
-            background: ${barColor};
-            border-radius: 4px;
-            display: flex;
-            align-items: center;
-            padding: 0 8px;
-            color: white;
-            font-size: 10px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            position: relative;
+        profitBar.className = `profit-bar ${
+            session.isCurrent ? 'current-session' : 
+            profit >= 0 ? 'profit-positive' : 'profit-negative'
+            }`;
+            
+            // Calculate bar width (minimum 30px, maximum 300px)
+            const barWidth = maxAbsProfit > 0 ? 
+                            Math.max(30, Math.min(300, Math.abs(profit) / maxAbsProfit * 250)) : 30;
+            
+            profitBar.style.width = barWidth + 'px';
+            profitBar.innerHTML = `
+            <span class="profit-amount">€${profit.toFixed(2)}</span>
+            <span class="rtp-badge">${rtp.toFixed(1)}%</span>
         `;
-
-        // Bar content
-        const profitText = `€${profit.toFixed(2)}`;
-        const rtpText = session.rtp ? ` (${session.rtp.toFixed(1)}%)` : '';
-        profitBar.innerHTML = `
-            <span>${profitText}</span>
-            <span style="font-size: 8px; opacity: 0.8; margin-left: 4px;">${rtpText}</span>
-        `;
-
+        
         // Current session indicator
         if (session.isCurrent) {
-            const currentIndicator = document.createElement('div');
-            currentIndicator.innerHTML = '🔴 Laufend';
-            currentIndicator.style.cssText = `
-                position: absolute;
-                right: -80px;
-                font-size: 8px;
-                color: #3b82f6;
-                font-weight: bold;
-                background: rgba(59, 130, 246, 0.1);
-                padding: 2px 6px;
-                border-radius: 12px;
-                border: 1px solid rgba(59, 130, 246, 0.3);
-            `;
-            profitBar.appendChild(currentIndicator);
-        }
-
-        // Hover effects and tooltips
-        profitBar.onmouseover = () => {
-            profitBar.style.transform = 'scaleY(1.1)';
+        const currentIndicator = document.createElement('div');
+        currentIndicator.className = 'current-indicator';
+        currentIndicator.textContent = '🔴 Laufend';
+        profitBar.appendChild(currentIndicator);
+    }
+        
+            // Hover tooltip
+        profitBar.title = `
+            Session ${actualIndex + 1}\n
+            Datum: ${new Date(session.startTime).toLocaleDateString('de-DE')}\n
+        Spiel: ${session.game || 'Unbekannt'}\n
+        Spins: ${session.spins || 0}\n
+        Einsatz: €${(session.totalBet || 0).toFixed(2)}\n
+        Gewinn: €${(session.totalWin || 0).toFixed(2)}\n
+        Profit: €${profit.toFixed(2)}\n
+        RTP: ${rtp.toFixed(1)}%
+            ${session.isCurrent ? '\n\n🔴 Laufende Session' : ''}
+        `.trim();
+        
+    // Hover effects
+    profitBar.addEventListener('mouseenter', () => {
+            profitBar.style.transform = 'scaleY(1.05)';
             profitBar.style.zIndex = '10';
-            
-            // Enhanced tooltip
-            profitBar.title = `
-Session ${actualIndex + 1}
-Datum: ${new Date(session.startTime).toLocaleDateString('de-DE')}
-Spiel: ${session.game || 'Unbekannt'}
-Spins: ${session.spins || 0}
-Einsatz: €${(session.totalBet || 0).toFixed(2)}
-Gewinn: €${(session.totalWin || 0).toFixed(2)}
-Profit: €${profit.toFixed(2)}
-RTP: ${(session.rtp || 0).toFixed(1)}%
-${session.isCurrent ? '\n🔴 Laufende Session' : ''}
-            `.trim();
-        };
-
-        profitBar.onmouseleave = () => {
-            profitBar.style.transform = 'scaleY(1)';
+    });
+    
+        profitBar.addEventListener('mouseleave', () => {
+                profitBar.style.transform = 'scaleY(1)';
             profitBar.style.zIndex = 'auto';
-        };
-
-        // Assembly
+        });
+        
+    barWrapper.appendChild(profitBar);
         barContainer.appendChild(sessionLabel);
-        barContainer.appendChild(profitBar);
+        barContainer.appendChild(barWrapper);
         chartCanvas.appendChild(barContainer);
     });
 
-    // Zero line indicator
+    // Zero line
     const zeroLine = document.createElement('div');
-    zeroLine.style.cssText = `
-        position: absolute;
-        left: 128px;
-        top: 0;
-        bottom: 0;
-        width: 2px;
-        background: #6b7280;
-        opacity: 0.3;
-        pointer-events: none;
-        z-index: 5;
-    `;
-
-    // Assembly
-    container.appendChild(navContainer);
-    container.appendChild(chartCanvas);
+    zeroLine.className = 'chart-zero-line';
     chartCanvas.appendChild(zeroLine);
 
-    // Setup navigation after DOM is ready
-    setTimeout(setupNavigation, 0);
-    setTimeout(updateNavInfo, 0);
-}
+    // Setup event listeners
+    this.setupChartEventListeners(sessions);
+    }
+
+    setupChartEventListeners(sessions) {
+    // View selector
+    document.querySelectorAll('input[name="chartView"]').forEach(radio => {
+    radio.addEventListener('change', () => {
+        if (radio.checked) {
+            // Update active state visually
+            document.querySelectorAll('.view-option').forEach(opt => opt.classList.remove('active'));
+            radio.closest('.view-option').classList.add('active');
+            
+            // Update chart state
+            this.chartState.sessionsPerView = radio.value === 'all' ? sessions.length : parseInt(radio.value);
+            this.chartState.currentOffset = 0;
+            this.renderProfitChart(sessions);
+        }
+        });
+        });
+
+    // Navigation buttons
+    const prevBtn = document.getElementById('chartPrevBtn');
+    const nextBtn = document.getElementById('chartNextBtn');
+
+    if (prevBtn) {
+        prevBtn.addEventListener('click', () => {
+                if (this.chartState.currentOffset > 0) {
+                this.chartState.currentOffset = Math.max(0, this.chartState.currentOffset - this.chartState.sessionsPerView);
+                this.renderProfitChart(sessions);
+        }
+    });
+    }
+
+    if (nextBtn) {
+    nextBtn.addEventListener('click', () => {
+    if (this.chartState.currentOffset + this.chartState.sessionsPerView < sessions.length) {
+        this.chartState.currentOffset = Math.min(
+            sessions.length - this.chartState.sessionsPerView,
+            this.chartState.currentOffset + this.chartState.sessionsPerView
+        );
+        this.renderProfitChart(sessions);
+        }
+    });
+    }
+    }
 
 
     renderSessionsTable(sessions) {
