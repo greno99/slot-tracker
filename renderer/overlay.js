@@ -688,6 +688,145 @@ class ElectronCasinoTracker {
             notification.classList.remove('show');
         }, duration);
     }
+
+    // ===== SPIN EDIT & DELETE FUNCTIONALITY =====
+    
+    toggleEditMode() {
+        this.editMode = !this.editMode;
+        const btn = document.getElementById('editModeBtn');
+        const modeIndicator = document.getElementById('editModeIndicator');
+        
+        if (this.editMode) {
+            btn.textContent = '✅ Edit Mode';
+            btn.classList.add('btn-active');
+            modeIndicator.style.display = 'block';
+            modeIndicator.textContent = '✏️ Edit Mode Active';
+            this.showNotification('Edit Mode aktiviert - Klicke auf Spins zum Bearbeiten', 'info');
+        } else {
+            btn.textContent = '✏️ Edit';
+            btn.classList.remove('btn-active');
+            modeIndicator.style.display = 'none';
+            this.showNotification('Edit Mode deaktiviert', 'info');
+        }
+        
+        // Update the spins display
+        this.updateSpinsHistory();
+    }
+    
+    editSpin(spinIndex) {
+        if (spinIndex >= this.sessionData.spinsHistory.length) {
+            this.showNotification('Spin nicht gefunden!', 'error');
+            return;
+        }
+        
+        const spin = this.sessionData.spinsHistory[spinIndex];
+        const time = new Date(spin.time).toLocaleTimeString('de-DE', { 
+            hour: '2-digit', 
+            minute: '2-digit' 
+        });
+        
+        // Create edit dialog
+        const newBet = prompt(
+            `Spin bearbeiten (${time}):\n\nNeuer Einsatz:`, 
+            spin.bet.toFixed(2)
+        );
+        
+        if (newBet === null) return; // User cancelled
+        
+        const newWin = prompt(
+            `Spin bearbeiten (${time}):\n\nNeuer Gewinn:`, 
+            spin.win.toFixed(2)
+        );
+        
+        if (newWin === null) return; // User cancelled
+        
+        // Validate input
+        const betAmount = parseFloat(newBet);
+        const winAmount = parseFloat(newWin);
+        
+        if (isNaN(betAmount) || betAmount < 0) {
+            this.showNotification('Ungültiger Einsatz!', 'error');
+            return;
+        }
+        
+        if (isNaN(winAmount) || winAmount < 0) {
+            this.showNotification('Ungültiger Gewinn!', 'error');
+            return;
+        }
+        
+        // Update spin and recalculate totals
+        this.updateSpin(spinIndex, betAmount, winAmount);
+    }
+    
+    updateSpin(spinIndex, newBet, newWin) {
+        const oldSpin = this.sessionData.spinsHistory[spinIndex];
+        
+        // Subtract old values from totals
+        this.sessionData.totalBet -= oldSpin.bet;
+        this.sessionData.totalWin -= oldSpin.win;
+        
+        // Update the spin
+        oldSpin.bet = newBet;
+        oldSpin.win = newWin;
+        
+        // Add new values to totals
+        this.sessionData.totalBet += newBet;
+        this.sessionData.totalWin += newWin;
+        
+        // Recalculate best win
+        this.recalculateBestWin();
+        
+        // Update UI and save
+        this.updateUI();
+        this.saveData();
+        
+        this.showNotification(`Spin aktualisiert: €${newBet.toFixed(2)} → €${newWin.toFixed(2)}`, 'success');
+    }
+    
+    deleteSpin(spinIndex) {
+        if (spinIndex >= this.sessionData.spinsHistory.length) {
+            this.showNotification('Spin nicht gefunden!', 'error');
+            return;
+        }
+        
+        const spin = this.sessionData.spinsHistory[spinIndex];
+        const time = new Date(spin.time).toLocaleTimeString('de-DE', { 
+            hour: '2-digit', 
+            minute: '2-digit' 
+        });
+        
+        const confirmed = confirm(
+            `Spin löschen (${time})?\n\nEinsatz: €${spin.bet.toFixed(2)}\nGewinn: €${spin.win.toFixed(2)}\n\nDies kann nicht rückgängig gemacht werden!`
+        );
+        
+        if (!confirmed) return;
+        
+        // Remove spin from history
+        this.sessionData.spinsHistory.splice(spinIndex, 1);
+        
+        // Update totals
+        this.sessionData.spins--;
+        this.sessionData.totalBet -= spin.bet;
+        this.sessionData.totalWin -= spin.win;
+        
+        // Recalculate best win
+        this.recalculateBestWin();
+        
+        // Update UI and save
+        this.updateUI();
+        this.saveData();
+        
+        this.showNotification(`Spin gelöscht (${time}): €${spin.bet.toFixed(2)} → €${spin.win.toFixed(2)}`, 'success');
+    }
+    
+    recalculateBestWin() {
+        this.sessionData.bestWin = 0;
+        this.sessionData.spinsHistory.forEach(spin => {
+            if (spin.win > this.sessionData.bestWin) {
+                this.sessionData.bestWin = spin.win;
+            }
+        });
+    }
 }
 
 class BalanceTracker {

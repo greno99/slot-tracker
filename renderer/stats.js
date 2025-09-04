@@ -958,9 +958,147 @@ ${session.isCurrent ? '\n🔴 Laufende Session' : ''}
         selectAllCheckbox.indeterminate = this.selectedSessions.size > 0 && this.selectedSessions.size < selectableSessionsCount;
     }
 
-    editSession(sessionId) {
-        // Placeholder for session editing functionality
-        this.showNotification('Session-Bearbeitung noch nicht implementiert', 'warning');
+    async editSession(sessionId) {
+        const session = this.allSessions.find(s => s.id === sessionId);
+        if (!session || session.isCurrent) {
+            this.showNotification('Session kann nicht bearbeitet werden', 'error');
+            return;
+        }
+
+        const date = new Date(session.startTime).toLocaleDateString('de-DE');
+        const gameTitle = `Session bearbeiten (${date} - ${session.game})`;
+
+        // Create edit dialog HTML
+        const editDialog = document.createElement('div');
+        editDialog.className = 'edit-session-dialog';
+        editDialog.innerHTML = `
+            <div class="edit-dialog-overlay">
+                <div class="edit-dialog-content">
+                    <div class="edit-dialog-header">
+                        <h3>${gameTitle}</h3>
+                        <button class="edit-dialog-close" id="closeEditDialog">×</button>
+                    </div>
+                    <div class="edit-dialog-body">
+                        <div class="edit-field">
+                            <label>Spielname:</label>
+                            <input type="text" id="editGame" value="${session.game || ''}" />
+                        </div>
+                        <div class="edit-field">
+                            <label>Spins:</label>
+                            <input type="number" id="editSpins" value="${session.spins || 0}" min="0" />
+                        </div>
+                        <div class="edit-field">
+                            <label>Gesamteinsatz (€):</label>
+                            <input type="number" id="editTotalBet" value="${(session.totalBet || 0).toFixed(2)}" step="0.01" min="0" />
+                        </div>
+                        <div class="edit-field">
+                            <label>Gesamtgewinn (€):</label>
+                            <input type="number" id="editTotalWin" value="${(session.totalWin || 0).toFixed(2)}" step="0.01" min="0" />
+                        </div>
+                        <div class="edit-field">
+                            <label>Größter Einzelgewinn (€):</label>
+                            <input type="number" id="editBestWin" value="${(session.bestWin || 0).toFixed(2)}" step="0.01" min="0" />
+                        </div>
+                        <div class="edit-field calculated-fields">
+                            <div><strong>Profit:</strong> <span id="calculatedProfit">€${((session.totalWin || 0) - (session.totalBet || 0)).toFixed(2)}</span></div>
+                            <div><strong>RTP:</strong> <span id="calculatedRtp">${session.totalBet > 0 ? ((session.totalWin || 0) / (session.totalBet || 0) * 100).toFixed(1) : 0}%</span></div>
+                        </div>
+                    </div>
+                    <div class="edit-dialog-actions">
+                        <button class="secondary-btn" id="cancelEdit">Abbrechen</button>
+                        <button class="success-btn" id="saveEdit">Speichern</button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(editDialog);
+
+        // Update calculated fields in real-time
+        const updateCalculatedFields = () => {
+            const totalBet = parseFloat(document.getElementById('editTotalBet').value) || 0;
+            const totalWin = parseFloat(document.getElementById('editTotalWin').value) || 0;
+            const profit = totalWin - totalBet;
+            const rtp = totalBet > 0 ? (totalWin / totalBet * 100) : 0;
+
+            document.getElementById('calculatedProfit').textContent = `€${profit.toFixed(2)}`;
+            document.getElementById('calculatedRtp').textContent = `${rtp.toFixed(1)}%`;
+
+            // Color the profit
+            const profitElement = document.getElementById('calculatedProfit');
+            profitElement.style.color = profit >= 0 ? '#10b981' : '#ef4444';
+        };
+
+        // Add event listeners for real-time calculation
+        document.getElementById('editTotalBet').addEventListener('input', updateCalculatedFields);
+        document.getElementById('editTotalWin').addEventListener('input', updateCalculatedFields);
+
+        // Initial calculation
+        updateCalculatedFields();
+
+        // Close dialog
+        const closeDialog = () => {
+            document.body.removeChild(editDialog);
+        };
+
+        document.getElementById('closeEditDialog').addEventListener('click', closeDialog);
+        document.getElementById('cancelEdit').addEventListener('click', closeDialog);
+
+        // Close on ESC key
+        const escapeHandler = (e) => {
+            if (e.key === 'Escape') {
+                closeDialog();
+                document.removeEventListener('keydown', escapeHandler);
+            }
+        };
+        document.addEventListener('keydown', escapeHandler);
+
+        // Save changes
+        document.getElementById('saveEdit').addEventListener('click', async () => {
+            try {
+                const updatedData = {
+                    game: document.getElementById('editGame').value.trim() || 'Unbekannt',
+                    spins: parseInt(document.getElementById('editSpins').value) || 0,
+                    totalBet: parseFloat(document.getElementById('editTotalBet').value) || 0,
+                    totalWin: parseFloat(document.getElementById('editTotalWin').value) || 0,
+                    bestWin: parseFloat(document.getElementById('editBestWin').value) || 0
+                };
+
+                // Validation
+                if (updatedData.totalBet < 0 || updatedData.totalWin < 0) {
+                    this.showNotification('Einsatz und Gewinn müssen positiv sein', 'error');
+                    return;
+                }
+
+                if (updatedData.spins < 0) {
+                    this.showNotification('Anzahl Spins muss positiv sein', 'error');
+                    return;
+                }
+
+                // Update session via IPC
+                const result = await ipcRenderer.invoke('update-session', sessionId, updatedData);
+
+                if (result.success) {
+                    this.showNotification(`Session erfolgreich aktualisiert`, 'success');
+                    closeDialog();
+                    document.removeEventListener('keydown', escapeHandler);
+                    
+                    // Reload data
+                    await this.init();
+                } else {
+                    this.showNotification(`Fehler beim Aktualisieren: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                console.error('Error updating session:', error);
+                this.showNotification(`Update-Fehler: ${error.message}`, 'error');
+            }
+        });
+
+        // Focus first field
+        setTimeout(() => {
+            document.getElementById('editGame').focus();
+            document.getElementById('editGame').select();
+        }, 100);
     }
 
     formatDuration(ms) {
